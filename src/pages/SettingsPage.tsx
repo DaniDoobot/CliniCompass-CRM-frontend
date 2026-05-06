@@ -1,0 +1,1051 @@
+import { useState } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Settings, Users, Tag, Shield, Receipt, Plus, Loader2, Pencil, MapPin, Trash2, Sparkles } from "lucide-react";
+import { useInvoiceSeries, useCreateInvoiceSeries } from "@/hooks/useBilling";
+import { useAllServices, useCreateService, useUpdateService, useDeleteService } from "@/hooks/useServicesAdmin";
+import { useCenters } from "@/hooks/useCenters";
+import { useAuth } from "@/hooks/useAuth";
+import { useAllStaffCenterServices, useAddStaffCenterService, useRemoveStaffCenterService } from "@/hooks/useStaffCenterServices";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Constants } from "@/integrations/supabase/types";
+import { useAllSpecialties, useCreateSpecialty, useUpdateSpecialty, useDeleteSpecialty } from "@/hooks/useSpecialties";
+
+const ALL_ROLES = Constants.public.Enums.app_role;
+const ROLE_LABELS: Record<string, string> = {
+  gerencia: "Gerencia",
+  administracion: "Administración",
+  recepcion: "Recepción",
+  comercial: "Comercial",
+  fisioterapeuta: "Fisioterapeuta",
+  nutricionista: "Nutricionista",
+  psicotecnico: "Psicotécnico",
+};
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  gerencia: "Acceso total al sistema: gestión de equipo, configuración, creación de usuarios, eliminación de datos y todas las operaciones.",
+  administracion: "Gestión de centros, series de facturación, servicios, contactos, negocios, agenda y facturación.",
+  recepcion: "Gestión de citas, disponibilidad, contactos y operaciones de recepción del centro.",
+  comercial: "Gestión de leads, negocios, presupuestos, facturas y seguimiento comercial.",
+  fisioterapeuta: "Acceso a agenda propia, citas, contactos asignados y disponibilidad de fisioterapia.",
+  nutricionista: "Acceso a agenda propia, citas, contactos asignados y disponibilidad de nutrición.",
+  psicotecnico: "Acceso a agenda propia, citas, contactos asignados y disponibilidad de psicotécnicos.",
+};
+
+export default function SettingsPage() {
+  const { data: series, isLoading: seriesLoading } = useInvoiceSeries();
+  const { data: centers } = useCenters();
+  const { hasRole } = useAuth();
+  const queryClient = useQueryClient();
+  const createSeries = useCreateInvoiceSeries();
+  const [openSeries, setOpenSeries] = useState(false);
+  const [seriesForm, setSeriesForm] = useState({ center_id: "", prefix: "", doc_type: "factura" });
+
+  // Services state
+  const { data: allServices, isLoading: servicesLoading } = useAllServices();
+  const createService = useCreateService();
+  const updateService = useUpdateService();
+  const deleteService = useDeleteService();
+  const [openService, setOpenService] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
+  const [deleteServiceTarget, setDeleteServiceTarget] = useState<any>(null);
+  const [svcForm, setSvcForm] = useState({
+    name: "", business_line: "fisioterapia", duration_minutes: "60", price: "0", active: true,
+  });
+
+  const resetSvcForm = () => setSvcForm({ name: "", business_line: "fisioterapia", duration_minutes: "60", price: "0", active: true });
+
+  // Specialties state
+  const { data: allSpecialties, isLoading: specialtiesLoading } = useAllSpecialties();
+  const createSpecialty = useCreateSpecialty();
+  const updateSpecialtyMut = useUpdateSpecialty();
+  const deleteSpecialtyMut = useDeleteSpecialty();
+  const [openSpecialty, setOpenSpecialty] = useState(false);
+  const [editingSpecialty, setEditingSpecialty] = useState<any>(null);
+  const [deleteSpecialtyTarget, setDeleteSpecialtyTarget] = useState<any>(null);
+  const [specForm, setSpecForm] = useState({ name: "", slug: "", icon_name: "Activity" });
+
+  const ICON_OPTIONS = ["Activity", "Apple", "Brain", "Heart", "Zap", "Dumbbell", "Leaf", "Eye", "Stethoscope"];
+
+  const handleSaveSpecialty = async () => {
+    if (!specForm.name) { toast.error("El nombre es obligatorio"); return; }
+    const slug = specForm.slug || specForm.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/-+$/,"");
+    try {
+      if (editingSpecialty) {
+        await updateSpecialtyMut.mutateAsync({ id: editingSpecialty.id, name: specForm.name, slug, icon_name: specForm.icon_name });
+        toast.success("Especialidad actualizada");
+      } else {
+        await createSpecialty.mutateAsync({ name: specForm.name, slug, icon_name: specForm.icon_name });
+        toast.success("Especialidad creada");
+      }
+      setOpenSpecialty(false);
+      setEditingSpecialty(null);
+      setSpecForm({ name: "", slug: "", icon_name: "Activity" });
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleDeleteSpecialty = async () => {
+    if (!deleteSpecialtyTarget) return;
+    try {
+      await deleteSpecialtyMut.mutateAsync(deleteSpecialtyTarget.id);
+      toast.success("Especialidad eliminada");
+    } catch (e: any) { toast.error(e.message); }
+    setDeleteSpecialtyTarget(null);
+  };
+
+
+  const handleSaveService = async () => {
+    if (!svcForm.name) { toast.error("El nombre del servicio es obligatorio"); return; }
+    try {
+      const payload = {
+        name: svcForm.name,
+        business_line: svcForm.business_line,
+        duration_minutes: parseInt(svcForm.duration_minutes) || 60,
+        price: parseFloat(svcForm.price) || 0,
+        active: svcForm.active,
+      };
+      if (editingService) {
+        await updateService.mutateAsync({ id: editingService.id, ...payload });
+        toast.success("Servicio actualizado");
+      } else {
+        await createService.mutateAsync(payload);
+        toast.success("Servicio creado");
+      }
+      setOpenService(false);
+      resetSvcForm();
+      setEditingService(null);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleDeleteService = async () => {
+    if (!deleteServiceTarget) return;
+    try {
+      await deleteService.mutateAsync(deleteServiceTarget.id);
+      toast.success("Servicio eliminado");
+    } catch (e: any) { toast.error(e.message); }
+    setDeleteServiceTarget(null);
+  };
+
+  const openEditService = (svc: any) => {
+    setEditingService(svc);
+    setSvcForm({
+      name: svc.name,
+      business_line: svc.business_line,
+      duration_minutes: String(svc.duration_minutes),
+      price: String(svc.price),
+      active: svc.active,
+    });
+    setOpenService(true);
+  };
+
+  const toggleServiceActive = async (svc: any) => {
+    try {
+      await updateService.mutateAsync({ id: svc.id, active: !svc.active });
+      toast.success(svc.active ? "Servicio desactivado" : "Servicio activado");
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  // Team state
+  const [openUser, setOpenUser] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [deleteStaffTarget, setDeleteStaffTarget] = useState<any>(null);
+  const [editRoles, setEditRoles] = useState<string[]>([]);
+  const [editProfile, setEditProfile] = useState({ first_name: "", last_name: "", email: "", phone: "", center_id: "", specialty: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [userForm, setUserForm] = useState({
+    email: "", password: "", first_name: "", last_name: "",
+    center_id: "", specialty: "", roles: [] as string[],
+  });
+
+  // Delete staff mutation (soft-delete by setting active=false)
+  const deleteStaffMutation = useMutation({
+    mutationFn: async (staffId: string) => {
+      const { error } = await supabase.from("staff_profiles").update({ active: false }).eq("id", staffId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
+    },
+  });
+
+  // Fetch staff profiles with roles
+  const { data: staffList, isLoading: staffLoading } = useQuery({
+    queryKey: ["staff-with-roles"],
+    queryFn: async () => {
+      const [profilesRes, rolesRes] = await Promise.all([
+        supabase.from("staff_profiles").select("*, center:centers(name)").eq("active", true).order("first_name"),
+        supabase.from("user_roles").select("*"),
+      ]);
+      const profiles = profilesRes.data || [];
+      const roles = rolesRes.data || [];
+      return profiles.map((p: any) => ({
+        ...p,
+        roles: roles.filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
+      }));
+    },
+  });
+
+  // Staff center services (assignments)
+  const { data: scsAll, isLoading: scsLoading } = useAllStaffCenterServices();
+  const addScs = useAddStaffCenterService();
+  const removeScs = useRemoveStaffCenterService();
+  const [openAssign, setOpenAssign] = useState(false);
+  const [assignForm, setAssignForm] = useState({ staff_profile_id: "", center_id: "", service_id: "" });
+
+  const handleAddAssignment = async () => {
+    if (!assignForm.staff_profile_id || !assignForm.center_id || !assignForm.service_id) {
+      toast.error("Selecciona profesional, centro y servicio");
+      return;
+    }
+    const dup = scsAll?.find((a: any) =>
+      a.staff_profile_id === assignForm.staff_profile_id &&
+      a.center_id === assignForm.center_id &&
+      a.service_id === assignForm.service_id
+    );
+    if (dup) { toast.error("Esta asignación ya existe"); return; }
+    try {
+      await addScs.mutateAsync(assignForm);
+      toast.success("Asignación creada");
+      setOpenAssign(false);
+      setAssignForm({ staff_profile_id: "", center_id: "", service_id: "" });
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleRemoveAssignment = async (id: string) => {
+    try {
+      await removeScs.mutateAsync(id);
+      toast.success("Asignación eliminada");
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const handleCreateSeries = async () => {
+    if (!seriesForm.center_id || !seriesForm.prefix) { toast.error("Completa centro y prefijo"); return; }
+    try {
+      await createSeries.mutateAsync(seriesForm);
+      toast.success("Serie creada");
+      setOpenSeries(false);
+      setSeriesForm({ center_id: "", prefix: "", doc_type: "factura" });
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const toggleRole = (role: string) => {
+    setUserForm(prev => ({
+      ...prev,
+      roles: prev.roles.includes(role)
+        ? prev.roles.filter(r => r !== role)
+        : [...prev.roles, role],
+    }));
+  };
+
+  const handleCreateUser = async () => {
+    if (!userForm.email || !userForm.password || !userForm.first_name || !userForm.last_name) {
+      toast.error("Completa todos los campos obligatorios");
+      return;
+    }
+    if (userForm.roles.length === 0) {
+      toast.error("Selecciona al menos un rol");
+      return;
+    }
+    setCreatingUser(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("create-user", {
+        body: {
+          email: userForm.email,
+          password: userForm.password,
+          first_name: userForm.first_name,
+          last_name: userForm.last_name,
+          roles: userForm.roles,
+          center_id: userForm.center_id || null,
+          specialty: userForm.specialty || null,
+        },
+      });
+      if (res.error) throw new Error(res.error.message || "Error creando usuario");
+      if (res.data?.error) throw new Error(res.data.error);
+      toast.success(`Usuario ${userForm.email} creado correctamente`);
+      setOpenUser(false);
+      setUserForm({ email: "", password: "", first_name: "", last_name: "", center_id: "", specialty: "", roles: [] });
+      queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const openEditStaff = (staff: any) => {
+    setEditingStaff(staff);
+    setEditRoles(staff.roles || []);
+    setEditProfile({
+      first_name: staff.first_name || "",
+      last_name: staff.last_name || "",
+      email: staff.email || "",
+      phone: staff.phone || "",
+      center_id: staff.center_id || "",
+      specialty: staff.specialty || "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingStaff) return;
+    setSavingEdit(true);
+    try {
+      const { error: profileError } = await supabase
+        .from("staff_profiles")
+        .update({
+          first_name: editProfile.first_name,
+          last_name: editProfile.last_name,
+          email: editProfile.email || null,
+          phone: editProfile.phone || null,
+          center_id: editProfile.center_id || null,
+          specialty: (editProfile.specialty || null) as any,
+        })
+        .eq("id", editingStaff.id);
+      if (profileError) throw profileError;
+
+      const { data: currentRoles } = await supabase
+        .from("user_roles")
+        .select("id, role")
+        .eq("user_id", editingStaff.user_id);
+
+      const currentRoleNames = (currentRoles || []).map(r => r.role as string);
+      const toDelete = (currentRoles || []).filter(r => !editRoles.includes(r.role));
+      const toAdd = editRoles.filter(r => !currentRoleNames.includes(r));
+
+      for (const r of toDelete) {
+        const { error } = await supabase.from("user_roles").delete().eq("id", r.id);
+        if (error) throw error;
+      }
+      if (toAdd.length > 0) {
+        const { error } = await supabase.from("user_roles").insert(
+          toAdd.map(role => ({ user_id: editingStaff.user_id, role: role as any }))
+        );
+        if (error) throw error;
+      }
+
+      toast.success("Usuario actualizado");
+      queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
+      setEditingStaff(null);
+    } catch (e: any) {
+      toast.error(e.message || "Error al actualizar");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteStaff = async () => {
+    if (!deleteStaffTarget) return;
+    try {
+      await deleteStaffMutation.mutateAsync(deleteStaffTarget.id);
+      toast.success("Miembro del equipo desactivado");
+    } catch (e: any) { toast.error(e.message); }
+    setDeleteStaffTarget(null);
+  };
+
+  const isGerencia = hasRole("gerencia");
+
+  return (
+    <AppLayout>
+      <PageHeader title="Configuración" description="Ajustes generales del sistema" />
+
+      <Tabs defaultValue="general" className="space-y-4">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="general" className="gap-1"><Settings className="h-3.5 w-3.5" /> General</TabsTrigger>
+          <TabsTrigger value="roles" className="gap-1"><Shield className="h-3.5 w-3.5" /> Roles</TabsTrigger>
+          <TabsTrigger value="specialties" className="gap-1"><Sparkles className="h-3.5 w-3.5" /> Especialidades</TabsTrigger>
+          <TabsTrigger value="services" className="gap-1"><Tag className="h-3.5 w-3.5" /> Servicios</TabsTrigger>
+          <TabsTrigger value="assignments" className="gap-1"><MapPin className="h-3.5 w-3.5" /> Asignaciones</TabsTrigger>
+          <TabsTrigger value="billing" className="gap-1"><Receipt className="h-3.5 w-3.5" /> Series facturación</TabsTrigger>
+          <TabsTrigger value="team" className="gap-1"><Users className="h-3.5 w-3.5" /> Equipo</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
+          <div className="stat-card max-w-2xl">
+            <h3 className="text-sm font-semibold font-heading text-foreground mb-4">Datos de la empresa</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Nombre de la empresa</Label>
+                <Input defaultValue="Grupo Salud Integral S.L." className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">CIF</Label>
+                <Input defaultValue="B12345678" className="h-9" />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-xs">Dirección fiscal</Label>
+                <Input defaultValue="C/ Principal 100, 28001 Madrid" className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Email</Label>
+                <Input defaultValue="admin@gruposalud.es" className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Teléfono</Label>
+                <Input defaultValue="911234567" className="h-9" />
+              </div>
+            </div>
+            <Button className="mt-4" size="sm">Guardar cambios</Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <div className="stat-card max-w-3xl">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold font-heading text-foreground mb-1">Roles y permisos del sistema</h3>
+              <p className="text-xs text-muted-foreground">
+                Los roles son fijos y controlan el acceso mediante políticas de seguridad en base de datos.
+                Para asignar o revocar roles a usuarios, usa la pestaña <strong>Equipo</strong>.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {ALL_ROLES.map((role) => {
+                const members = staffList?.filter((s: any) => s.roles?.includes(role)) || [];
+                return (
+                  <div key={role} className="p-4 rounded-lg border bg-muted/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold">{ROLE_LABELS[role] || role}</span>
+                      <Badge variant="outline" className="text-[10px] ml-auto">{members.length} usuario{members.length !== 1 ? "s" : ""}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">{ROLE_DESCRIPTIONS[role]}</p>
+                    {members.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {members.map((m: any) => (
+                          <Badge key={m.id} variant="secondary" className="text-[10px]">{m.first_name} {m.last_name}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="specialties">
+          <div className="stat-card max-w-4xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold font-heading text-foreground">Especialidades</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Las especialidades aparecen como secciones en el menú lateral. Cada una agrupa sus servicios, citas y bonos.</p>
+              </div>
+              {isGerencia && (
+                <Button size="sm" onClick={() => { setSpecForm({ name: "", slug: "", icon_name: "Activity" }); setEditingSpecialty(null); setOpenSpecialty(true); }}>
+                  <Plus className="h-4 w-4 mr-1" />Nueva especialidad
+                </Button>
+              )}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">Nombre</TableHead>
+                  <TableHead className="font-semibold">Slug</TableHead>
+                  <TableHead className="font-semibold">Icono</TableHead>
+                  <TableHead className="font-semibold text-center">Activa</TableHead>
+                  <TableHead className="font-semibold">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {specialtiesLoading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-4 text-muted-foreground">Cargando...</TableCell></TableRow>
+                ) : !allSpecialties?.length ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-4 text-muted-foreground">Sin especialidades</TableCell></TableRow>
+                ) : allSpecialties.map((spec: any) => (
+                  <TableRow key={spec.id} className={!spec.active ? "opacity-50" : ""}>
+                    <TableCell className="text-sm font-medium">{spec.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground font-mono">{spec.slug}</TableCell>
+                    <TableCell className="text-sm">{spec.icon_name}</TableCell>
+                    <TableCell className="text-center">
+                      <Switch checked={spec.active} onCheckedChange={async () => {
+                        try {
+                          await updateSpecialtyMut.mutateAsync({ id: spec.id, active: !spec.active });
+                          toast.success(spec.active ? "Especialidad desactivada" : "Especialidad activada");
+                        } catch (e: any) { toast.error(e.message); }
+                      }} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => {
+                          setEditingSpecialty(spec);
+                          setSpecForm({ name: spec.name, slug: spec.slug, icon_name: spec.icon_name });
+                          setOpenSpecialty(true);
+                        }}>
+                          <Pencil className="h-3 w-3" /> Editar
+                        </Button>
+                        {isGerencia && (
+                          <button className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors" onClick={() => setDeleteSpecialtyTarget(spec)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={openSpecialty} onOpenChange={setOpenSpecialty}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>{editingSpecialty ? "Editar especialidad" : "Nueva especialidad"}</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nombre *</Label>
+                  <Input className="h-9" value={specForm.name} onChange={e => setSpecForm({ ...specForm, name: e.target.value })} placeholder="Ej: Acupuntura" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Slug (URL)</Label>
+                  <Input className="h-9" value={specForm.slug} onChange={e => setSpecForm({ ...specForm, slug: e.target.value })} placeholder="Se genera automáticamente" />
+                  <p className="text-[10px] text-muted-foreground">Déjalo vacío para generarlo a partir del nombre</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Icono</Label>
+                  <Select value={specForm.icon_name} onValueChange={v => setSpecForm({ ...specForm, icon_name: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ICON_OPTIONS.map(icon => (
+                        <SelectItem key={icon} value={icon}>{icon}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setOpenSpecialty(false)}>Cancelar</Button>
+                <Button onClick={handleSaveSpecialty} disabled={createSpecialty.isPending || updateSpecialtyMut.isPending}>
+                  {editingSpecialty ? "Guardar cambios" : "Crear especialidad"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={!!deleteSpecialtyTarget} onOpenChange={(open) => { if (!open) setDeleteSpecialtyTarget(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar especialidad?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Se eliminará la especialidad <strong>"{deleteSpecialtyTarget?.name}"</strong>. Los servicios asociados no se eliminarán.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteSpecialty} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </TabsContent>
+
+        <TabsContent value="services">
+          <div className="stat-card max-w-4xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold font-heading text-foreground">Servicios disponibles</h3>
+              {isGerencia && (
+                <Button size="sm" onClick={() => { resetSvcForm(); setEditingService(null); setOpenService(true); }}>
+                  <Plus className="h-4 w-4 mr-1" />Nuevo servicio
+                </Button>
+              )}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">Nombre</TableHead>
+                  <TableHead className="font-semibold">Especialidad</TableHead>
+                  <TableHead className="font-semibold">Duración</TableHead>
+                  <TableHead className="font-semibold text-right">Precio</TableHead>
+                  <TableHead className="font-semibold text-center">Activo</TableHead>
+                  <TableHead className="font-semibold">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {servicesLoading ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">Cargando...</TableCell></TableRow>
+                ) : !allServices?.length ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">Sin servicios configurados</TableCell></TableRow>
+                ) : allServices.map((svc: any) => (
+                  <TableRow key={svc.id} className={!svc.active ? "opacity-50" : ""}>
+                    <TableCell className="text-sm font-medium">{svc.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {allSpecialties?.find((sp: any) => sp.slug === svc.business_line)?.name || svc.business_line}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">{svc.duration_minutes} min</TableCell>
+                    <TableCell className="text-sm text-right font-mono">{svc.price > 0 ? `€${svc.price}` : "—"}</TableCell>
+                    <TableCell className="text-center">
+                      <Switch checked={svc.active} onCheckedChange={() => toggleServiceActive(svc)} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => openEditService(svc)}>
+                          <Pencil className="h-3 w-3" /> Editar
+                        </Button>
+                        {isGerencia && (
+                          <button className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors" onClick={() => setDeleteServiceTarget(svc)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={openService} onOpenChange={setOpenService}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>{editingService ? "Editar servicio" : "Nuevo servicio"}</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nombre *</Label>
+                  <Input className="h-9" value={svcForm.name} onChange={e => setSvcForm({ ...svcForm, name: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Especialidad</Label>
+                  <Select value={svcForm.business_line} onValueChange={v => setSvcForm({ ...svcForm, business_line: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {allSpecialties?.filter((sp: any) => sp.active).map((sp: any) => (
+                        <SelectItem key={sp.slug} value={sp.slug}>{sp.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Duración (min)</Label>
+                    <Input type="number" className="h-9" value={svcForm.duration_minutes} onChange={e => setSvcForm({ ...svcForm, duration_minutes: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Precio base (€)</Label>
+                    <Input type="number" step="0.01" className="h-9" value={svcForm.price} onChange={e => setSvcForm({ ...svcForm, price: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setOpenService(false)}>Cancelar</Button>
+                <Button onClick={handleSaveService} disabled={createService.isPending || updateService.isPending}>
+                  {editingService ? "Guardar cambios" : "Crear servicio"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={!!deleteServiceTarget} onOpenChange={(open) => { if (!open) setDeleteServiceTarget(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar servicio?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Se eliminará permanentemente el servicio <strong>"{deleteServiceTarget?.name}"</strong>. Esta acción no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteService} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </TabsContent>
+
+        <TabsContent value="assignments">
+          <div className="stat-card max-w-4xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold font-heading text-foreground">Asignaciones profesional → centro → servicio</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Define en qué centros y para qué servicios puede trabajar cada profesional. La agenda respetará estas restricciones.
+                </p>
+              </div>
+              {isGerencia && (
+                <Button size="sm" onClick={() => { setAssignForm({ staff_profile_id: "", center_id: "", service_id: "" }); setOpenAssign(true); }}>
+                  <Plus className="h-4 w-4 mr-1" />Nueva asignación
+                </Button>
+              )}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">Profesional</TableHead>
+                  <TableHead className="font-semibold">Centro</TableHead>
+                  <TableHead className="font-semibold">Servicio</TableHead>
+                  <TableHead className="font-semibold">Especialidad</TableHead>
+                  {isGerencia && <TableHead className="w-[60px]"></TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {scsLoading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-4 text-muted-foreground">Cargando...</TableCell></TableRow>
+                ) : !scsAll?.length ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Sin asignaciones. Añade asignaciones para que la agenda filtre profesionales y servicios por centro.
+                  </TableCell></TableRow>
+                ) : scsAll.map((a: any) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="text-sm font-medium">{a.staff?.first_name} {a.staff?.last_name}</TableCell>
+                    <TableCell className="text-sm">{a.center?.name || "-"}</TableCell>
+                    <TableCell className="text-sm">{a.service?.name || "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {a.service?.business_line === "fisioterapia" ? "Fisioterapia" : a.service?.business_line === "nutricion" ? "Nutrición" : "Psicotécnicos"}
+                      </Badge>
+                    </TableCell>
+                    {isGerencia && (
+                      <TableCell>
+                        <button className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors" onClick={() => handleRemoveAssignment(a.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={openAssign} onOpenChange={setOpenAssign}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Nueva asignación</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Profesional *</Label>
+                  <Select value={assignForm.staff_profile_id} onValueChange={v => setAssignForm({ ...assignForm, staff_profile_id: v })}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {staffList?.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Centro *</Label>
+                  <Select value={assignForm.center_id} onValueChange={v => setAssignForm({ ...assignForm, center_id: v })}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {centers?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Servicio *</Label>
+                  <Select value={assignForm.service_id} onValueChange={v => setAssignForm({ ...assignForm, service_id: v })}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {allServices?.filter((s: any) => s.active).map((s: any) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name} ({s.business_line === "fisioterapia" ? "Fisio" : s.business_line === "nutricion" ? "Nutri" : "Psico"})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancelar</Button>
+                <Button onClick={handleAddAssignment} disabled={addScs.isPending}>
+                  {addScs.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Crear asignación
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <div className="stat-card max-w-3xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold font-heading text-foreground">Series de facturación por centro</h3>
+              <Button size="sm" onClick={() => setOpenSeries(true)}><Plus className="h-4 w-4 mr-1" />Nueva serie</Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">Centro</TableHead>
+                  <TableHead className="font-semibold">Prefijo</TableHead>
+                  <TableHead className="font-semibold">Tipo</TableHead>
+                  <TableHead className="font-semibold text-right">Nº actual</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {seriesLoading ? (
+                  <TableRow><TableCell colSpan={4} className="text-center py-4 text-muted-foreground">Cargando...</TableCell></TableRow>
+                ) : !series?.length ? (
+                  <TableRow><TableCell colSpan={4} className="text-center py-4 text-muted-foreground">Sin series configuradas</TableCell></TableRow>
+                ) : series.map((s: any) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-sm">{s.center?.name || "-"}</TableCell>
+                    <TableCell className="text-sm font-mono font-medium">{s.prefix}</TableCell>
+                    <TableCell className="text-sm">{s.doc_type === "simplificada" ? "Simplificada" : "Factura"}</TableCell>
+                    <TableCell className="text-right text-sm">{s.current_number}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={openSeries} onOpenChange={setOpenSeries}>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Nueva serie de facturación</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Centro *</Label>
+                  <Select value={seriesForm.center_id} onValueChange={v => setSeriesForm({ ...seriesForm, center_id: v })}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    <SelectContent>{centers?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Prefijo (ej: MN-2026, VS-SIMP)</Label>
+                  <Input className="h-9" value={seriesForm.prefix} onChange={e => setSeriesForm({ ...seriesForm, prefix: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Tipo</Label>
+                  <Select value={seriesForm.doc_type} onValueChange={v => setSeriesForm({ ...seriesForm, doc_type: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="factura">Factura</SelectItem>
+                      <SelectItem value="simplificada">Simplificada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setOpenSeries(false)}>Cancelar</Button>
+                <Button onClick={handleCreateSeries} disabled={createSeries.isPending}>Crear serie</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
+        <TabsContent value="team">
+          <div className="stat-card max-w-4xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold font-heading text-foreground">Equipo del CRM</h3>
+              {isGerencia && (
+                <Button size="sm" onClick={() => setOpenUser(true)}>
+                  <Plus className="h-4 w-4 mr-1" />Nuevo usuario
+                </Button>
+              )}
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold">Nombre</TableHead>
+                  <TableHead className="font-semibold">Email</TableHead>
+                  <TableHead className="font-semibold">Centro</TableHead>
+                  <TableHead className="font-semibold">Roles</TableHead>
+                  {isGerencia && <TableHead className="w-[100px]">Acciones</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {staffLoading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-4 text-muted-foreground">Cargando...</TableCell></TableRow>
+                ) : !staffList?.length ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-4 text-muted-foreground">Sin usuarios</TableCell></TableRow>
+                ) : staffList.map((s: any) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-sm font-medium">{s.first_name} {s.last_name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{s.email || "-"}</TableCell>
+                    <TableCell className="text-sm">{s.center?.name || "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {s.roles?.map((r: string) => (
+                          <Badge key={r} variant="secondary" className="text-[10px]">
+                            {ROLE_LABELS[r] || r}
+                          </Badge>
+                        ))}
+                        {(!s.roles || s.roles.length === 0) && (
+                          <span className="text-xs text-muted-foreground">Sin roles</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    {isGerencia && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <button className="p-1.5 rounded-md hover:bg-muted transition-colors" onClick={() => openEditStaff(s)}>
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                          <button className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors" onClick={() => setDeleteStaffTarget(s)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={openUser} onOpenChange={setOpenUser}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>Crear nuevo usuario</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nombre *</Label>
+                    <Input className="h-9" value={userForm.first_name} onChange={e => setUserForm({ ...userForm, first_name: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Apellido *</Label>
+                    <Input className="h-9" value={userForm.last_name} onChange={e => setUserForm({ ...userForm, last_name: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Email *</Label>
+                    <Input className="h-9" type="email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Contraseña *</Label>
+                    <Input className="h-9" type="password" value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Centro</Label>
+                    <Select value={userForm.center_id} onValueChange={v => setUserForm({ ...userForm, center_id: v })}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                      <SelectContent>{centers?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Especialidad</Label>
+                    <Select value={userForm.specialty} onValueChange={v => setUserForm({ ...userForm, specialty: v })}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fisioterapia">Fisioterapia</SelectItem>
+                        <SelectItem value="nutricion">Nutrición</SelectItem>
+                        <SelectItem value="psicotecnicos">Psicotécnicos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Roles *</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ALL_ROLES.map((role) => (
+                      <div key={role} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={userForm.roles.includes(role)}
+                          onCheckedChange={() => toggleRole(role)}
+                        />
+                        <span className="text-xs">{ROLE_LABELS[role] || role}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setOpenUser(false)}>Cancelar</Button>
+                <Button onClick={handleCreateUser} disabled={creatingUser}>
+                  {creatingUser && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Crear usuario
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={!!editingStaff} onOpenChange={(open) => { if (!open) setEditingStaff(null); }}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>Editar usuario: {editingStaff?.first_name} {editingStaff?.last_name}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nombre</Label>
+                    <Input className="h-9" value={editProfile.first_name} onChange={e => setEditProfile({ ...editProfile, first_name: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Apellido</Label>
+                    <Input className="h-9" value={editProfile.last_name} onChange={e => setEditProfile({ ...editProfile, last_name: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Email</Label>
+                    <Input className="h-9" type="email" value={editProfile.email} onChange={e => setEditProfile({ ...editProfile, email: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Teléfono</Label>
+                    <Input className="h-9" value={editProfile.phone} onChange={e => setEditProfile({ ...editProfile, phone: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Centro</Label>
+                    <Select value={editProfile.center_id} onValueChange={v => setEditProfile({ ...editProfile, center_id: v })}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Sin centro" /></SelectTrigger>
+                      <SelectContent>{centers?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Especialidad</Label>
+                    <Select value={editProfile.specialty} onValueChange={v => setEditProfile({ ...editProfile, specialty: v })}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Sin especialidad" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fisioterapia">Fisioterapia</SelectItem>
+                        <SelectItem value="nutricion">Nutrición</SelectItem>
+                        <SelectItem value="psicotecnicos">Psicotécnicos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Roles</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ALL_ROLES.map((role) => (
+                      <div key={role} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={editRoles.includes(role)}
+                          onCheckedChange={() => {
+                            setEditRoles(prev =>
+                              prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+                            );
+                          }}
+                        />
+                        <span className="text-xs">{ROLE_LABELS[role] || role}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={() => setEditingStaff(null)}>Cancelar</Button>
+                <Button onClick={handleSaveEdit} disabled={savingEdit}>
+                  {savingEdit && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Guardar cambios
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={!!deleteStaffTarget} onOpenChange={(open) => { if (!open) setDeleteStaffTarget(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Desactivar miembro del equipo?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Se desactivará a <strong>{deleteStaffTarget?.first_name} {deleteStaffTarget?.last_name}</strong>. Ya no aparecerá en las listas activas pero sus datos se conservarán.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteStaff} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Desactivar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </TabsContent>
+      </Tabs>
+    </AppLayout>
+  );
+}

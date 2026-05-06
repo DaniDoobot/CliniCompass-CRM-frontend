@@ -1,0 +1,166 @@
+import {
+  LayoutDashboard,
+  Users,
+  UserPlus,
+  CalendarDays,
+  Building2,
+  FileText,
+  TrendingUp,
+  Megaphone,
+  Receipt,
+  Activity,
+  Apple,
+  Brain,
+  Settings,
+  ChevronDown,
+  LogOut,
+  Briefcase,
+  Contact,
+  Stethoscope,
+  Heart,
+  Zap,
+  Dumbbell,
+  Leaf,
+  Eye,
+  type LucideIcon,
+} from "lucide-react";
+import nweeLogo from "@/assets/nwee-logo.png";
+import { NavLink } from "@/components/NavLink";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useSpecialties } from "@/hooks/useSpecialties";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Activity, Apple, Brain, Heart, Zap, Dumbbell, Leaf, Eye, Stethoscope,
+};
+
+const mainNav = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Contactos", url: "/contactos", icon: Contact },
+  { title: "Leads", url: "/leads", icon: UserPlus },
+  { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Negocios", url: "/negocios", icon: Briefcase },
+  { title: "Agenda", url: "/agenda", icon: CalendarDays },
+  { title: "Centros", url: "/centros", icon: Building2 },
+];
+
+const managementNav = [
+  { title: "Campañas", url: "/campanas", icon: Megaphone },
+  { title: "Presupuestos", url: "/presupuestos", icon: FileText },
+  { title: "Facturación", url: "/facturacion", icon: Receipt },
+  { title: "Documentos", url: "/documentos", icon: FileText },
+  { title: "Configuración", url: "/configuracion", icon: Settings },
+];
+
+type NavItem = { title: string; url: string; icon: LucideIcon };
+
+function NavGroup({ label, items, defaultOpen = true }: { label: string; items: NavItem[]; defaultOpen?: boolean }) {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+  const location = useLocation();
+
+  return (
+    <Collapsible defaultOpen={defaultOpen} className="group/collapsible">
+      <SidebarGroup>
+        <CollapsibleTrigger asChild>
+          <SidebarGroupLabel className="cursor-pointer text-sidebar-muted uppercase text-[10px] tracking-widest font-semibold flex items-center justify-between hover:text-sidebar-foreground transition-colors">
+            {!collapsed && label}
+            {!collapsed && <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />}
+          </SidebarGroupLabel>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url} tooltip={item.title}>
+                    <NavLink to={item.url} end={item.url === "/"} className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+  const { profile, roles, signOut } = useAuth();
+  const { data: specialties } = useSpecialties();
+
+  const clinicalNav: NavItem[] = (specialties || []).map((s: any) => ({
+    title: s.name,
+    url: `/especialidad/${s.slug}`,
+    icon: ICON_MAP[s.icon_name] || Activity,
+  }));
+
+  const initials = profile
+    ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase()
+    : "??";
+  const displayName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : "Usuario";
+  const displayRole = roles.length > 0 ? roles[0].charAt(0).toUpperCase() + roles[0].slice(1) : "Sin rol";
+
+  return (
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="p-4 border-b border-sidebar-border/60">
+        <div className="flex items-center justify-center min-h-[40px]">
+          {collapsed ? (
+            <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Stethoscope className="h-4.5 w-4.5 text-sidebar-primary-foreground" />
+            </div>
+          ) : (
+            <img src={nweeLogo} alt="nwee — Health IA Management" className="h-10 w-auto object-contain" />
+          )}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 pt-2">
+        <NavGroup label="Principal" items={mainNav} />
+        <NavGroup label="Especialidades" items={clinicalNav} />
+        <NavGroup label="Gestión" items={managementNav} />
+      </SidebarContent>
+
+      <SidebarFooter className="p-3">
+        {!collapsed && (
+          <div className="flex items-center gap-2 px-2">
+            <div className="h-7 w-7 rounded-full bg-sidebar-accent flex items-center justify-center text-[11px] font-semibold text-sidebar-accent-foreground">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-sidebar-accent-foreground truncate">{displayName}</p>
+              <p className="text-[10px] text-sidebar-muted truncate">{displayRole}</p>
+            </div>
+            <button onClick={signOut} className="p-1 rounded hover:bg-sidebar-accent transition-colors" title="Cerrar sesión">
+              <LogOut className="h-3.5 w-3.5 text-sidebar-muted" />
+            </button>
+          </div>
+        )}
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
