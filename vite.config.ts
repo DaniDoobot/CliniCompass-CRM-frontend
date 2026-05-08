@@ -11,6 +11,23 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // ⚠️  Proxies de desarrollo — NO disponibles en producción.
+    // En producción configurar Nginx o Edge Functions (ver Fase 4 del plan).
+    proxy: {
+      "/api/doobot": {
+        target: "https://demo.doobot.ai",
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/api\/doobot/, ""),
+        cookieDomainRewrite: "localhost",
+        secure: false,
+      },
+      "/api/meta": {
+        target: "https://graph.facebook.com",
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/api\/meta/, ""),
+        secure: false,
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

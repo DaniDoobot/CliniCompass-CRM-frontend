@@ -1,0 +1,724 @@
+/* =========================================================
+   CONSOLA WHATSAPP WEB — Estilos
+   ========================================================= */
+
+.console-root {
+  display: flex;
+  height: calc(100vh - 56px - 49px); /* viewport - header - footer */
+  overflow: hidden;
+  background: hsl(var(--background));
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border));
+}
+
+/* ── CHAT LIST (Left panel) ── */
+.console-chat-list {
+  width: 380px;
+  min-width: 380px;
+  border-right: 1px solid hsl(var(--border));
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--card));
+}
+
+.console-chat-list-header {
+  padding: 16px;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+.console-chat-list-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin-bottom: 12px;
+}
+
+.console-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: hsl(var(--muted));
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.console-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: hsl(var(--foreground));
+}
+
+.console-search input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.console-tabs {
+  display: flex;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.console-tab {
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  color: hsl(var(--muted-foreground));
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.console-tab:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted) / 0.5);
+}
+
+.console-tab.active {
+  color: hsl(var(--primary));
+  border-bottom-color: hsl(var(--primary));
+}
+
+.console-chat-items {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* ── CHAT ITEM ── */
+.console-chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+  transition: background 0.15s;
+  position: relative;
+}
+
+.console-chat-item:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+.console-chat-item.selected {
+  background: hsl(var(--primary) / 0.08);
+  border-left: 3px solid hsl(var(--primary));
+}
+
+.console-chat-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7));
+}
+
+.console-chat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.console-chat-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.console-chat-preview {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.console-chat-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.console-chat-time {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+.console-unread-badge {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: hsl(var(--primary));
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.console-mode-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.console-mode-badge.auto {
+  background: hsl(142 76% 36% / 0.15);
+  color: hsl(142 76% 36%);
+}
+
+.console-mode-badge.manual {
+  background: hsl(38 92% 50% / 0.15);
+  color: hsl(38 92% 50%);
+}
+
+/* ── CHAT VIEW (Center panel) ── */
+.console-chat-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: hsl(var(--background));
+}
+
+.console-chat-view-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+.console-chat-view-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.console-chat-view-header-info h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.console-chat-view-header-info p {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+}
+
+.console-messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    hsl(var(--muted) / 0.15),
+    hsl(var(--muted) / 0.15) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
+.console-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: hsl(var(--muted-foreground));
+}
+
+.console-empty-state svg {
+  width: 64px;
+  height: 64px;
+  opacity: 0.3;
+}
+
+.console-empty-state p {
+  font-size: 14px;
+}
+
+/* ── MESSAGE BUBBLES ── */
+.console-msg-row {
+  display: flex;
+  animation: msgAppear 0.2s ease-out;
+}
+
+@keyframes msgAppear {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.console-msg-row.from-client {
+  justify-content: flex-start;
+}
+
+.console-msg-row.from-panel {
+  justify-content: flex-end;
+}
+
+.console-msg-bubble {
+  max-width: 65%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  word-wrap: break-word;
+  position: relative;
+  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.06);
+}
+
+.console-msg-row.from-client .console-msg-bubble {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-bottom-left-radius: 4px;
+  border: 1px solid hsl(var(--border));
+}
+
+.console-msg-row.from-panel .console-msg-bubble {
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--foreground));
+  border-bottom-right-radius: 4px;
+}
+
+.console-msg-bubble.document {
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+
+.console-msg-time {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 4px;
+  text-align: right;
+}
+
+.console-msg-who {
+  font-size: 10px;
+  font-weight: 600;
+  color: hsl(var(--primary));
+  margin-bottom: 2px;
+}
+
+.console-msg-image {
+  max-width: 280px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.console-msg-video {
+  max-width: 320px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.console-msg-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.console-msg-btn {
+  padding: 6px 12px;
+  border: 1px solid hsl(var(--primary) / 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.05);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ── INPUT AREA ── */
+.console-input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+.console-input-area input {
+  flex: 1;
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 13px;
+  outline: none;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  transition: border-color 0.2s;
+}
+
+.console-input-area input:focus {
+  border-color: hsl(var(--primary));
+}
+
+.console-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: hsl(var(--primary));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.console-send-btn:hover {
+  opacity: 0.9;
+}
+
+.console-send-btn:active {
+  transform: scale(0.95);
+}
+
+.console-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.console-attach-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.console-attach-btn:hover {
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+/* ── INFO PANEL (Right panel) ── */
+.console-info-panel {
+  width: 340px;
+  min-width: 340px;
+  border-left: 1px solid hsl(var(--border));
+  overflow-y: auto;
+  background: hsl(var(--card));
+  scrollbar-width: thin;
+}
+
+.console-info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.console-info-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.console-info-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
+  margin: 20px auto 12px;
+}
+
+.console-info-section {
+  padding: 16px;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+.console-info-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 6px;
+}
+
+.console-info-value {
+  font-size: 13px;
+  color: hsl(var(--foreground));
+}
+
+.console-info-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  font-size: 13px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  outline: none;
+  cursor: pointer;
+}
+
+.console-info-select:focus {
+  border-color: hsl(var(--primary));
+}
+
+.console-info-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid hsl(var(--primary) / 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.console-info-btn:hover {
+  background: hsl(var(--primary) / 0.12);
+}
+
+.console-info-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  font-size: 13px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  outline: none;
+}
+
+.console-info-input:focus {
+  border-color: hsl(var(--primary));
+}
+
+/* ── LOGIN STATE ── */
+.console-login-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+}
+
+.console-login-state .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid hsl(var(--border));
+  border-top-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── SEND OPTIONS DIALOG ── */
+.console-send-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: hsl(0 0% 0% / 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.console-send-dialog {
+  background: hsl(var(--card));
+  border-radius: 16px;
+  width: 520px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px hsl(0 0% 0% / 0.3);
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.console-send-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.console-send-dialog-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.console-send-dialog-body {
+  padding: 20px;
+}
+
+.console-send-field {
+  margin-bottom: 16px;
+}
+
+.console-send-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 6px;
+}
+
+.console-send-field input,
+.console-send-field textarea,
+.console-send-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  font-size: 13px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  outline: none;
+  font-family: inherit;
+}
+
+.console-send-field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.console-send-field input:focus,
+.console-send-field textarea:focus,
+.console-send-field select:focus {
+  border-color: hsl(var(--primary));
+}
+
+.console-send-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.console-send-preview {
+  background: hsl(var(--muted) / 0.5);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: hsl(var(--foreground));
+  margin-bottom: 16px;
+}
+
+/* ── CONTEXT MENU ── */
+.console-context-menu {
+  position: absolute;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.15);
+  min-width: 180px;
+  z-index: 50;
+  overflow: hidden;
+  animation: fadeIn 0.1s;
+}
+
+.console-context-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.console-context-item:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+/* ── STATUS DOTS ── */
+.console-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.console-status-dot.open { background: hsl(142 76% 36%); }
+.console-status-dot.closed { background: hsl(0 72% 51%); }
+.console-status-dot.pending { background: hsl(38 92% 50%); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .console-chat-list {
+    width: 100%;
+    min-width: 100%;
+  }
+  .console-info-panel {
+    display: none;
+  }
+}

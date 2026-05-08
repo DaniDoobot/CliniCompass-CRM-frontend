@@ -23,6 +23,7 @@ import {
   Leaf,
   Eye,
   type LucideIcon,
+  MessageSquare,
 } from "lucide-react";
 import nweeLogo from "@/assets/nwee-logo.png";
 import { NavLink } from "@/components/NavLink";
@@ -60,6 +61,7 @@ const mainNav = [
   { title: "Negocios", url: "/negocios", icon: Briefcase },
   { title: "Agenda", url: "/agenda", icon: CalendarDays },
   { title: "Centros", url: "/centros", icon: Building2 },
+  { title: "Consola", url: "/consola", icon: MessageSquare },
 ];
 
 const managementNav = [

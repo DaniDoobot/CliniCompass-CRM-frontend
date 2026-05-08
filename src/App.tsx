@@ -20,6 +20,7 @@ import InvoicesPage from "./pages/InvoicesPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import ConsolePage from "./pages/ConsolePage";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/negocios" element={<ProtectedRoute><BusinessesPage /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><AgendaPage /></ProtectedRoute>} />
             <Route path="/centros" element={<ProtectedRoute><CentersPage /></ProtectedRoute>} />
+            <Route path="/consola" element={<ProtectedRoute><ConsolePage /></ProtectedRoute>} />
             <Route path="/especialidad/:slug" element={<ProtectedRoute><SpecialtyPage /></ProtectedRoute>} />
             {/* Legacy routes */}
             <Route path="/fisioterapia" element={<Navigate to="/especialidad/fisioterapia" replace />} />
