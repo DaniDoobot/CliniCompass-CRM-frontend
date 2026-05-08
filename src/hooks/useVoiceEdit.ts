@@ -45,20 +45,8 @@ export function useVoiceEdit(entityType: "patient" | "contact", entityId: string
     },
   });
 
-  const sessionNotesQuery = useQuery({
-    queryKey: ["session-notes", entityType, entityId],
-    enabled: !!entityId,
-    queryFn: async () => {
-      const col = entityType === "patient" ? "patient_id" : "contact_id";
-      const { data, error } = await supabase
-        .from("patient_session_notes")
-        .select("*")
-        .eq(col, entityId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  // NOTE: sessionNotesQuery eliminado — la tabla patient_session_notes no existe.
+  // Las entradas de sesión se consultan con useSessionEntries (usePatientSessions.ts).
 
   const synopsisQuery = useQuery({
     queryKey: ["synopsis", entityType, entityId],
@@ -78,10 +66,8 @@ export function useVoiceEdit(entityType: "patient" | "contact", entityId: string
   return {
     editMutation,
     voiceEdits: voiceEditsQuery.data,
-    sessionNotes: sessionNotesQuery.data,
     synopsis: synopsisQuery.data,
     isLoadingEdits: voiceEditsQuery.isLoading,
-    isLoadingNotes: sessionNotesQuery.isLoading,
     isLoadingSynopsis: synopsisQuery.isLoading,
   };
 }
