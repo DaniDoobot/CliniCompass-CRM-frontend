@@ -150,9 +150,8 @@ serve(async (req) => {
     const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    const { data: claimsData, error: authErr } = await supabaseAuth.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
+    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser();
+    const userId = user?.id;
     if (authErr || !userId) throw new Error("Unauthorized");
 
     const admin = createClient(supabaseUrl, serviceKey);

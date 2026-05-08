@@ -52,8 +52,7 @@ serve(async (req) => {
       .upload(filePath, audioBytes, { contentType: "audio/webm", upsert: false });
     if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
 
-    // 2. Transcribe audio via OpenAI Whisper
-    const audioBytes = Uint8Array.from(atob(audio_base64), (c) => c.charCodeAt(0));
+    // 2. Transcribe audio via OpenAI Whisper (reutiliza audioBytes ya declarado arriba)
     const whisperForm = new FormData();
     whisperForm.append(
       "file",

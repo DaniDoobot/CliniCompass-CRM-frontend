@@ -127,13 +127,13 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No auth header");
-    const token = authHeader.replace("Bearer ", "");
 
-    const supabaseAuth = createClient(supabaseUrl, supabaseKey);
-    const { data: claims, error: authErr } = await (supabaseAuth.auth as any).getClaims(token);
-    if (authErr || !claims) throw new Error("Unauthorized");
-    const userId = claims.claims?.sub;
-    if (!userId) throw new Error("Unauthorized: no sub");
+    const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser();
+    if (authErr || !user) throw new Error("Unauthorized");
+    const userId = user.id;
 
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: staffProfile } = await admin

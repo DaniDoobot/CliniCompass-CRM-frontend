@@ -19,20 +19,8 @@ export function useVoiceEdit(entityType: "patient" | "contact", entityId: string
     },
   });
 
-  const sessionMutation = useMutation({
-    mutationFn: async (params: { content: string; source: "manual" | "voice"; transcription?: string; audioFilePath?: string | null }) => {
-      const { data, error } = await supabase.functions.invoke("process-session-note", {
-        body: { content: params.content, source: params.source, transcription: params.transcription, audio_file_path: params.audioFilePath || null, entity_type: entityType, entity_id: entityId },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["session-notes", entityType, entityId] });
-      qc.invalidateQueries({ queryKey: ["synopsis", entityType, entityId] });
-    },
-  });
+  // NOTE: sessionMutation (process-session-note) eliminado — función inexistente.
+  // La gestión de sesiones se hace con useManageSession en usePatientSessions.ts.
 
   const voiceEditsQuery = useQuery({
     queryKey: ["voice-edits", entityType, entityId],
@@ -82,7 +70,6 @@ export function useVoiceEdit(entityType: "patient" | "contact", entityId: string
 
   return {
     editMutation,
-    sessionMutation,
     voiceEdits: voiceEditsQuery.data,
     sessionNotes: sessionNotesQuery.data,
     synopsis: synopsisQuery.data,
