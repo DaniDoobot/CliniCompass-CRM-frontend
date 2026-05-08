@@ -5,9 +5,16 @@ export function useVoiceEdit(entityType: "patient" | "contact", entityId: string
   const qc = useQueryClient();
 
   const editMutation = useMutation({
-    mutationFn: async (params: { transcription: string; audioFilePath?: string | null }) => {
+    mutationFn: async (params: { transcription?: string | null; audioBase64?: string | null; audioFilePath?: string | null }) => {
       const { data, error } = await supabase.functions.invoke("process-voice-edit", {
-        body: { transcription: params.transcription, entity_type: entityType, entity_id: entityId, audio_file_path: params.audioFilePath || null },
+        body: {
+          transcription: params.transcription || null,
+          entity_type: entityType,
+          entity_id: entityId,
+          audio_file_path: params.audioFilePath || null,
+          audio_base64: params.audioBase64 || null,
+          audio_file_name: "audio.webm",
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

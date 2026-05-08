@@ -26,15 +26,19 @@ export function VoiceEditSection({ entityType, entityId }: Props) {
     setStatus("recording");
     try {
       const result = await audioRecorder.startRecording();
-      // This resolves when stopRecording is called
       setStatus("processing");
-      if (!result.transcription) {
+
+      // Require at least audio (base64) to proceed; transcription may come from server-side Whisper
+      if (!result.transcription && !result.audioBase64) {
         setStatus("error");
-        toast.error("No se pudo transcribir el audio. Intenta de nuevo.");
+        toast.error("No se pudo capturar el audio. Intenta de nuevo.");
+        setTimeout(() => setStatus("idle"), 4000);
         return;
       }
+
       const editResult = await editMutation.mutateAsync({
         transcription: result.transcription,
+        audioBase64: result.audioBase64,
         audioFilePath: result.audioFilePath,
       });
       setLastResult(editResult);

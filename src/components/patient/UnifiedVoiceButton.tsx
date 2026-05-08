@@ -40,19 +40,22 @@ export function UnifiedVoiceButton({ entityType, entityId, compact }: Props) {
     try {
       const result = await audioRecorder.startRecording();
       setStatus("processing");
-      if (!result.transcription) {
+      // Require at least audio capture to proceed; transcription may come from server-side Whisper
+      if (!result.transcription && !result.audioBase64) {
         setStatus("error");
-        toast.error("No se pudo transcribir el audio. Intenta de nuevo.");
+        toast.error("No se pudo capturar el audio. Intenta de nuevo.");
         setTimeout(() => setStatus("idle"), 3000);
         return;
       }
 
       const { data, error } = await supabase.functions.invoke("process-voice-unified", {
         body: {
-          transcription: result.transcription,
+          transcription: result.transcription || undefined,
           entity_type: entityType,
           entity_id: entityId,
           audio_file_path: result.audioFilePath,
+          audio_base64: result.audioBase64 || undefined,
+          audio_file_name: "audio.webm",
         },
       });
       if (error) throw error;

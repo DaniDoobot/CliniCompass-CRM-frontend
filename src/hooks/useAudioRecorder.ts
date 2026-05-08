@@ -13,6 +13,7 @@ interface UseAudioRecorderOptions {
 interface RecordingResult {
   transcription: string | null;
   audioFilePath: string | null;
+  audioBase64: string | null;
 }
 
 export function useAudioRecorder({ entityType, entityId, folder }: UseAudioRecorderOptions) {
@@ -41,10 +42,26 @@ export function useAudioRecorder({ entityType, entityId, folder }: UseAudioRecor
           stream.getTracks().forEach((t) => t.stop());
           setStatus("processing");
 
-          // Upload audio
           const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
           let audioFilePath: string | null = null;
+          let audioBase64: string | null = null;
 
+          // Convert blob to base64 for server-side Whisper transcription fallback
+          try {
+            audioBase64 = await new Promise<string | null>((res) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const r = reader.result as string;
+                res(r ? r.split(",")[1] : null);
+              };
+              reader.onerror = () => res(null);
+              reader.readAsDataURL(audioBlob);
+            });
+          } catch {
+            audioBase64 = null;
+          }
+
+          // Upload audio to Storage (for archival)
           try {
             const timestamp = Date.now();
             const path = `${folder}/${entityType}/${entityId}/${timestamp}.webm`;
@@ -61,10 +78,10 @@ export function useAudioRecorder({ entityType, entityId, folder }: UseAudioRecor
             console.error("Audio upload failed:", err);
           }
 
-          // Get transcription from SpeechRecognition (already accumulated)
+          // Transcription from SpeechRecognition (may be null if browser doesn't support it)
           const transcription = transcriptRef.current.trim() || null;
 
-          resolveRef.current?.({ transcription, audioFilePath });
+          resolveRef.current?.({ transcription, audioFilePath, audioBase64 });
           resolveRef.current = null;
         };
 

@@ -140,7 +140,7 @@ async function resolveEntityByName(admin: any, nameRaw: string): Promise<{ entit
   return candidates[0];
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

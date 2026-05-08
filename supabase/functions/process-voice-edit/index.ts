@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -33,7 +33,35 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    const { transcription, entity_type, entity_id, audio_file_path } = await req.json();
+    const { transcription: transcriptionInput, entity_type, entity_id, audio_file_path, audio_base64, audio_file_name } = await req.json();
+    let transcription: string = transcriptionInput || "";
+
+    // Server-side Whisper transcription when browser SpeechRecognition didn't produce output
+    if (!transcription && audio_base64) {
+      console.log("[process-voice-edit] No browser transcription — using Whisper");
+      try {
+        const audioBytes = Uint8Array.from(atob(audio_base64), (c) => c.charCodeAt(0));
+        const whisperForm = new FormData();
+        whisperForm.append("file", new Blob([audioBytes], { type: "audio/webm" }), audio_file_name || "audio.webm");
+        whisperForm.append("model", "whisper-1");
+        whisperForm.append("language", "es");
+        const wResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${openaiKey}` },
+          body: whisperForm,
+        });
+        if (wResp.ok) {
+          const wData = await wResp.json();
+          transcription = wData.text?.trim() || "";
+          console.log("[process-voice-edit] Whisper transcription:", transcription);
+        } else {
+          console.error("[process-voice-edit] Whisper error:", wResp.status, await wResp.text());
+        }
+      } catch (err) {
+        console.error("[process-voice-edit] Whisper failed:", err);
+      }
+    }
+
     if (!transcription || !entity_type || !entity_id) {
       throw new Error("Missing transcription, entity_type, or entity_id");
     }
