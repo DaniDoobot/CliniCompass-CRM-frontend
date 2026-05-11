@@ -19,11 +19,11 @@ export function MessageBubble({ message }: Props) {
   const { text, fromUser, time, buttons, isDocument, imageUrl, videoUrl, status, who } = message;
 
   return (
-    <div className={`console-message ${fromUser ? "from-panel" : "from-client"}`}>
-      <div className="console-message-bubble">
+    <div className={`console-msg-row ${fromUser ? "from-panel" : "from-client"}`}>
+      <div className="console-msg-bubble">
         {/* Indicador de quién envió */}
         {fromUser && who && who.toUpperCase() !== "BOT" && (
-          <div className="console-message-who">{who}</div>
+          <div className="console-msg-who">{who}</div>
         )}
 
         {/* Contenido */}
@@ -50,18 +50,18 @@ export function MessageBubble({ message }: Props) {
 
         {/* Botones */}
         {buttons && buttons.length > 0 && (
-          <div className="console-message-buttons">
+          <div className="console-msg-buttons">
             {buttons.map((b) => (
-              <div key={b.id} className="console-message-btn">{b.text}</div>
+              <div key={b.id} className="console-msg-btn">{b.text}</div>
             ))}
           </div>
         )}
 
-        {/* Footer: hora + estado */}
-        <div className="console-message-meta">
+        {/* Footer: hora */}
+        <div className="console-msg-time">
           <span>{formatTime(time)}</span>
           {fromUser && status && (
-            <span className="console-message-status">{status}</span>
+            <span style={{ marginLeft: 4, opacity: 0.7 }}>{status}</span>
           )}
         </div>
       </div>
