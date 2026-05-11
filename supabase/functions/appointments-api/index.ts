@@ -89,7 +89,7 @@ serve(async (req: Request) => {
         professional_id: professional_id || null,
         service_id: service_id || null,
         notes: notes || null,
-        status: "programada"
+        status: "pendiente"
       }).select().single();
 
       if (error) throw error;

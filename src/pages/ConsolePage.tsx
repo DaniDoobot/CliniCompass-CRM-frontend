@@ -133,6 +133,7 @@ function ConsoleContent() {
           <ConversationInfo
             chat={selectedChat}
             onClose={() => setShowInfo(false)}
+            onUpdate={(partial) => setSelectedChat(prev => prev ? { ...prev, ...partial } : null)}
           />
         )}
 

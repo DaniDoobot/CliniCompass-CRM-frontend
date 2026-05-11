@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ChatItem } from "@/lib/doobotApi";
 import { useDoobotConversationActions, useDoobotManagers } from "@/hooks/useDoobotInfo";
 import {
@@ -13,15 +13,28 @@ import { X, UserCheck, Check, Loader2 } from "lucide-react";
 interface Props {
   chat: ChatItem;
   onClose: () => void;
+  onUpdate?: (partial: Partial<ChatItem>) => void;
 }
 
-export function ConversationInfo({ chat, onClose }: Props) {
+export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
   const { data: managers } = useDoobotManagers();
   const { assignManager, setCampaign, setBot, setTimeZone, setContact, setAlias } =
     useDoobotConversationActions(chat.ConversationID);
 
   const [aliasValue, setAliasValue] = useState(chat.ClientAlias ?? "");
   const [aliasSaved, setAliasSaved] = useState(false);
+
+  const [localCampaign, setLocalCampaign] = useState(chat.Campaign ?? "");
+  const [localBot, setLocalBot] = useState(chat.BotProjectID ?? "");
+  const [localTimeZone, setLocalTimeZone] = useState(chat.TimeZone ?? "");
+  const [localContact, setLocalContact] = useState(chat.Contact ?? "");
+
+  useEffect(() => {
+    setLocalCampaign(chat.Campaign ?? "");
+    setLocalBot(chat.BotProjectID ?? "");
+    setLocalTimeZone(chat.TimeZone ?? "");
+    setLocalContact(chat.Contact ?? "");
+  }, [chat.ConversationID, chat.Campaign, chat.BotProjectID, chat.TimeZone, chat.Contact]);
 
   const name = chat.ClientAlias || chat.ClientPhone || "Desconocido";
   const initials = name
@@ -36,6 +49,7 @@ export function ConversationInfo({ chat, onClose }: Props) {
       setAlias.mutate(aliasValue.trim(), {
         onSuccess: () => {
           setAliasSaved(true);
+          onUpdate?.({ ClientAlias: aliasValue.trim() });
           setTimeout(() => setAliasSaved(false), 2000);
         },
       });
@@ -126,8 +140,15 @@ export function ConversationInfo({ chat, onClose }: Props) {
         <div className="console-info-label">Campaña</div>
         <select
           className="console-info-select"
-          value={chat.Campaign ?? ""}
-          onChange={(e) => setCampaign.mutate(e.target.value)}
+          value={localCampaign}
+          onChange={(e) => {
+            const val = e.target.value;
+            setLocalCampaign(val);
+            setCampaign.mutate(val, { 
+              onSuccess: () => onUpdate?.({ Campaign: val }),
+              onError: () => setLocalCampaign(chat.Campaign ?? "")
+            });
+          }}
         >
           <option value="">Sin campaña</option>
           {CampaignCatalog.entries.map((c) => (
@@ -143,8 +164,15 @@ export function ConversationInfo({ chat, onClose }: Props) {
         <div className="console-info-label">Bot</div>
         <select
           className="console-info-select"
-          value={chat.BotProjectID ?? ""}
-          onChange={(e) => setBot.mutate(e.target.value)}
+          value={localBot}
+          onChange={(e) => {
+            const val = e.target.value;
+            setLocalBot(val);
+            setBot.mutate(val, { 
+              onSuccess: () => onUpdate?.({ BotProjectID: val }),
+              onError: () => setLocalBot(chat.BotProjectID ?? "")
+            });
+          }}
         >
           <option value="">Sin bot</option>
           {BotCatalog.entries.map((b) => (
@@ -160,8 +188,15 @@ export function ConversationInfo({ chat, onClose }: Props) {
         <div className="console-info-label">Horario de contacto</div>
         <select
           className="console-info-select"
-          value={chat.TimeZone ?? ""}
-          onChange={(e) => setTimeZone.mutate(e.target.value)}
+          value={localTimeZone}
+          onChange={(e) => {
+            const val = e.target.value;
+            setLocalTimeZone(val);
+            setTimeZone.mutate(val, { 
+              onSuccess: () => onUpdate?.({ TimeZone: val }),
+              onError: () => setLocalTimeZone(chat.TimeZone ?? "")
+            });
+          }}
         >
           <option value="">Sin definir</option>
           {TimeZoneCatalog.entries.map((t) => (
@@ -177,8 +212,15 @@ export function ConversationInfo({ chat, onClose }: Props) {
         <div className="console-info-label">Intento de contacto</div>
         <select
           className="console-info-select"
-          value={chat.Contact ?? ""}
-          onChange={(e) => setContact.mutate(e.target.value)}
+          value={localContact}
+          onChange={(e) => {
+            const val = e.target.value;
+            setLocalContact(val);
+            setContact.mutate(val, { 
+              onSuccess: () => onUpdate?.({ Contact: val }),
+              onError: () => setLocalContact(chat.Contact ?? "")
+            });
+          }}
         >
           <option value="">Sin definir</option>
           {ContactCatalog.entries.map((c) => (
