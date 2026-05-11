@@ -1,43 +1,12 @@
 /**
- * DoobotConsole — Configuración global y catálogos.
+ * DoobotConsole — Catálogos y configuración de UI.
  *
- * ⚠️  VARIABLES DE ENTORNO:
- *   VITE_DOOBOT_USER      — usuario de demo (no usar credenciales reales en frontend)
- *   VITE_DOOBOT_PASS      — contraseña de demo (no usar credenciales reales en frontend)
- *   VITE_DOOBOT_META_TOKEN  — token Meta Graph API (solo demo; en producción mover a EF)
- *   VITE_DOOBOT_META_PHONE_ID — phone ID de WhatsApp Business
- *   VITE_DOOBOT_CONSOLE_ID    — consola ID en doobot
+ * Las credenciales (DOOBOT_USER, DOOBOT_PASS, META_TOKEN, META_PHONE_ID,
+ * DOOBOT_CONSOLE_ID) residen exclusivamente en la Edge Function `console-api`
+ * como variables de entorno server-side. No se exponen al bundle del navegador.
  *
- * ⚠️  CATÁLOGOS:
- *   Los valores de CampaignCatalog, BotCatalog, TemplateCatalog son de demo.
- *   Actualizar con los IDs reales antes de producción.
- *
- * TODO (producción):
- *   - Mover META_TOKEN, DOOBOT_USER, DOOBOT_PASS a variables de servidor.
- *   - Crear Edge Functions proxy para doobot y Meta (ver Fase 4 del plan).
- *   - No exponer estos valores en el bundle del navegador.
+ * Este archivo solo contiene catálogos de UI y definiciones de plantillas.
  */
-
-// =========================================================
-// HOSTS (proxied via Vite dev server — ver vite.config.ts)
-// En producción estos paths deben apuntar a Edge Functions / Nginx proxy.
-// =========================================================
-export const DOOBOT_API_BASE = "/api/doobot";
-export const META_API_BASE = "/api/meta";
-
-// =========================================================
-// CREDENCIALES — ⚠️ SOLO DEMO/DESARROLLO
-// =========================================================
-export const DOOBOT_USER = import.meta.env.VITE_DOOBOT_USER ?? "";
-export const DOOBOT_PASS = import.meta.env.VITE_DOOBOT_PASS ?? "";
-export const META_TOKEN = import.meta.env.VITE_DOOBOT_META_TOKEN ?? "";
-export const META_PHONE_ID = import.meta.env.VITE_DOOBOT_META_PHONE_ID ?? "";
-
-/**
- * ID de la consola en doobot (aparece en las peticiones de lista de chats).
- * Cambiarlo por el ID real de la cuenta de producción.
- */
-export const CONSOLE_ID = import.meta.env.VITE_DOOBOT_CONSOLE_ID ?? "";
 
 // =========================================================
 // CATÁLOGOS — id ↔ display

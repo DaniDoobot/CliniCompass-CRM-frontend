@@ -1,64 +1,53 @@
 /**
- * Hook para gestionar la sesión con la API de doobot.
- * Auto-login con credenciales del .env al montar el provider.
+ * Contexto de autenticación para la consola WhatsApp.
  *
- * ⚠️  DOOBOT_USER y DOOBOT_PASS son credenciales de desarrollo.
- *     En producción mover a Edge Function proxy (Fase 4).
+ * La única autenticación válida es la sesión del CRM (Supabase Auth).
+ * No existe login separado de Doobot desde el frontend.
+ * La Edge Function `console-api` verifica el JWT del CRM y accede
+ * a Doobot/Meta con credenciales server-side.
  */
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { doobotLogin } from "@/lib/doobotApi";
-import { DOOBOT_USER, DOOBOT_PASS } from "@/lib/doobotConfig";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DoobotAuthContextType {
   isLoggedIn: boolean;
   isLoggingIn: boolean;
   loginError: string | null;
   userName: string | null;
-  login: () => Promise<void>;
-  logout: () => void;
 }
 
 const DoobotAuthContext = createContext<DoobotAuthContextType | undefined>(undefined);
 
 export function DoobotAuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(true);
+  const [loginError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
-  const login = useCallback(async () => {
-    setIsLoggingIn(true);
-    setLoginError(null);
-    try {
-      const res = await doobotLogin(DOOBOT_USER, DOOBOT_PASS);
-      setIsLoggedIn(true);
-      setUserName(res.current_user?.name ?? DOOBOT_USER);
-    } catch (e: any) {
-      // 403/422 = sesión ya activa — tratar como logueado
-      if (e.message?.includes("422") || e.message?.includes("403") || e.message?.includes("anonymous users")) {
-        setIsLoggedIn(true);
-        setUserName(DOOBOT_USER);
-      } else {
-        setLoginError(e.message ?? "Error de login con doobot");
-        setIsLoggedIn(false);
-      }
-    } finally {
-      setIsLoggingIn(false);
-    }
-  }, []);
-
-  const logout = useCallback(() => {
-    setIsLoggedIn(false);
-    setUserName(null);
-  }, []);
-
-  // Auto-login al montar
   useEffect(() => {
-    login();
-  }, [login]);
+    // La consola está disponible mientras el usuario del CRM esté autenticado.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+      setUserName(session?.user?.email ?? null);
+      setIsLoggingIn(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+      setUserName(session?.user?.email ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
-    <DoobotAuthContext.Provider value={{ isLoggedIn, isLoggingIn, loginError, userName, login, logout }}>
+    <DoobotAuthContext.Provider value={{ isLoggedIn, isLoggingIn, loginError, userName }}>
       {children}
     </DoobotAuthContext.Provider>
   );

@@ -1,14 +1,14 @@
 /**
- * Cliente HTTP para la Meta Graph API (WhatsApp Cloud API).
+ * Cliente para Meta Graph API (WhatsApp Cloud API).
  *
- * ⚠️  Las llamadas pasan por el proxy de Vite (/api/meta) en desarrollo.
- *     En producción, mover el META_TOKEN a una Edge Function para no exponerlo.
- *     Ver TODO de producción en doobotConfig.ts.
+ * `sendToMeta` delega en la Edge Function `console-api` (action: "meta:send").
+ * El META_TOKEN y META_PHONE_ID residen server-side.
  *
- * ENCAPSULACIÓN: Todas las llamadas a Meta deben pasar por este módulo.
+ * Los builders de payload (sendTextMessage, sendImageMessage, etc.)
+ * construyen el body y lo envían a través de la EF.
  */
 
-import { META_API_BASE, META_TOKEN, META_PHONE_ID } from "./doobotConfig";
+import { supabase } from "@/integrations/supabase/client";
 import type { TemplateDefinition } from "./doobotConfig";
 import { getTranslation } from "./doobotConfig";
 
@@ -18,27 +18,18 @@ export interface MetaSendResponse {
   messages: { id: string }[];
 }
 
-const metaHeaders = (): HeadersInit => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${META_TOKEN}`,
-});
-
-async function sendToMeta(body: object): Promise<MetaSendResponse> {
-  const res = await fetch(`${META_API_BASE}/v24.0/${META_PHONE_ID}/messages`, {
-    method: "POST",
-    headers: metaHeaders(),
-    body: JSON.stringify(body),
+// ── Envío a través de la EF ────────────────────────────────────────────
+async function sendToMeta(payload: object): Promise<MetaSendResponse> {
+  const { data, error } = await supabase.functions.invoke("console-api", {
+    body: { action: "meta:send", payload },
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Meta send failed: ${res.status} — ${err}`);
-  }
-  return res.json();
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data.data as MetaSendResponse;
 }
 
-// =========================================================
-// BUILDERS + SEND
-// =========================================================
+// ── Builders ───────────────────────────────────────────────────────────
+// Nota: el campo `to` es el teléfono del destinatario (cliente), no el phone ID de negocio.
 
 export async function sendTextMessage(to: string, text: string): Promise<MetaSendResponse> {
   return sendToMeta({
@@ -50,13 +41,21 @@ export async function sendTextMessage(to: string, text: string): Promise<MetaSen
   });
 }
 
-export async function sendImageMessage(to: string, imageUrl: string, caption: string): Promise<MetaSendResponse> {
+export async function sendImageMessage(
+  to: string,
+  imageUrl: string,
+  caption: string
+): Promise<MetaSendResponse> {
   const image: Record<string, string> = { link: imageUrl };
   if (caption) image.caption = caption;
   return sendToMeta({ messaging_product: "whatsapp", recipient_type: "individual", to, type: "image", image });
 }
 
-export async function sendVideoMessage(to: string, videoUrl: string, caption: string): Promise<MetaSendResponse> {
+export async function sendVideoMessage(
+  to: string,
+  videoUrl: string,
+  caption: string
+): Promise<MetaSendResponse> {
   const video: Record<string, string> = { link: videoUrl };
   if (caption) video.caption = caption;
   return sendToMeta({ messaging_product: "whatsapp", recipient_type: "individual", to, type: "video", video });
@@ -108,7 +107,7 @@ export async function sendTemplateMessage(
     });
   }
 
-  const metaBody = {
+  const metaPayload = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to,
@@ -120,7 +119,7 @@ export async function sendTemplateMessage(
     },
   };
 
-  const metaResponse = await sendToMeta(metaBody);
+  const metaResponse = await sendToMeta(metaPayload);
 
   const translation = getTranslation(template, languageCode);
   let rendered = translation.bodyText;
