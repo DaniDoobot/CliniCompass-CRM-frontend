@@ -1,37 +1,108 @@
 import { useState, useMemo } from "react";
-import { useDoobotChats } from "@/hooks/useDoobotChats";
+import { useDoobotChats, useNewActivity, clearNewActivity, addNewActivity } from "@/hooks/useDoobotChats";
+import { useUnreadBadge } from "@/hooks/useUnreadBadge";
 import { ChatListItem } from "./ChatListItem";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, MessageSquare, CheckCircle } from "lucide-react";
 import type { ChatItem } from "@/lib/doobotApi";
+
+type Tab = "no_leidos" | "entrantes" | "archivadas";
 
 interface Props {
   selectedId: string | null;
   onSelect: (chat: ChatItem) => void;
+  onModeToggled?: (conversationId: string, newMode: string) => void;
 }
 
-export function ChatList({ selectedId, onSelect }: Props) {
-  const [showArchived, setShowArchived] = useState(false);
+/** Parse a chat timestamp to epoch-ms for sorting. */
+function chatTimestampMs(ts: string | null): number {
+  if (!ts) return 0;
+  const d = new Date(ts);
+  if (!isNaN(d.getTime())) return d.getTime();
+  // Try dd-MM-yyyy HH:mm:ss
+  const m = ts.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/);
+  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00`).getTime() || 0;
+  return 0;
+}
+
+export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
+  const [tab, setTab] = useState<Tab>("no_leidos");
   const [search, setSearch] = useState("");
 
+  // Local detection of new messages (independent of API's MessagesNoRead)
+  const newActivity = useNewActivity();
+
+  // Always keep active chats polling
+  const activeHook = useDoobotChats(false);
+  // Only fetch archived when on that tab
+  const isArchived = tab === "archivadas";
+  const archivedHook = useDoobotChats(true, isArchived);
+
   const { chats, isLoading, toggleMode, setStatus, archive, unarchive, markRead } =
-    useDoobotChats(showArchived);
+    isArchived ? archivedHook : activeHook;
+
+  /** Check if a conversation has unread: either API says so OR we locally detected new activity */
+  const hasUnread = (c: ChatItem) => {
+    const apiUnread = parseInt(c.MessagesNoRead ?? "0") > 0;
+    const localUnread = c.ConversationID ? newActivity.has(c.ConversationID) : false;
+    return apiUnread || localUnread;
+  };
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return chats;
+    let list = [...chats];
+
+    // Sort by most-recent activity first (like WhatsApp)
+    list.sort((a, b) => chatTimestampMs(b.LastMessageTimestamp) - chatTimestampMs(a.LastMessageTimestamp));
+
+    // For "No leídos" filter conversations with unread messages (API or local)
+    if (tab === "no_leidos") {
+      list = list.filter(hasUnread);
+    }
+
+    if (!search.trim()) return list;
     const q = search.toLowerCase();
-    return chats.filter(
+    return list.filter(
       (c) =>
         (c.ClientAlias ?? "").toLowerCase().includes(q) ||
         (c.ClientPhone ?? "").includes(q) ||
         (c.Campaign ?? "").toLowerCase().includes(q) ||
         (c.Manager ?? "").toLowerCase().includes(q)
     );
-  }, [chats, search]);
+  }, [chats, search, tab, newActivity]);
+
+  // Count unread — always from active chats, using both API and local detection
+  const unreadCount = useMemo(
+    () => activeHook.chats.filter(hasUnread).length,
+    [activeHook.chats, newActivity]
+  );
+
+  // Update favicon & document title with unread count
+  useUnreadBadge(unreadCount);
+
+  const handleSelect = (chat: ChatItem) => {
+    // Clear local new-activity flag when user opens this conversation
+    if (chat.ConversationID) clearNewActivity(chat.ConversationID);
+    onSelect(chat);
+  };
+
+  const handleMarkUnread = (chat: ChatItem) => {
+    if (chat.ConversationID) addNewActivity(chat.ConversationID);
+  };
+
+  const emptyMessage = () => {
+    if (search) return "Sin resultados";
+    if (tab === "no_leidos") return "No hay conversaciones sin leer";
+    if (tab === "archivadas") return "No hay conversaciones archivadas";
+    return "No hay conversaciones";
+  };
 
   return (
     <div className="console-chat-list">
+      {/* Header */}
       <div className="console-chat-list-header">
-        <h2>💬 Consola</h2>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MessageSquare size={20} style={{ color: 'hsl(var(--primary))' }} />
+          Consola
+        </h2>
         <div className="console-search">
           <Search size={16} style={{ color: "hsl(var(--muted-foreground))", flexShrink: 0 }} />
           <input
@@ -43,15 +114,32 @@ export function ChatList({ selectedId, onSelect }: Props) {
         </div>
       </div>
 
+      {/* Tabs: No leídos | Entrantes | Archivadas */}
       <div className="console-tabs">
-        <button className={`console-tab ${!showArchived ? "active" : ""}`} onClick={() => setShowArchived(false)}>
-          Activas
+        <button
+          className={`console-tab ${tab === "no_leidos" ? "active" : ""}`}
+          onClick={() => setTab("no_leidos")}
+        >
+          No leídos
+          {unreadCount > 0 && (
+            <span className="console-tab-badge">{unreadCount}</span>
+          )}
         </button>
-        <button className={`console-tab ${showArchived ? "active" : ""}`} onClick={() => setShowArchived(true)}>
+        <button
+          className={`console-tab ${tab === "entrantes" ? "active" : ""}`}
+          onClick={() => setTab("entrantes")}
+        >
+          Entrantes
+        </button>
+        <button
+          className={`console-tab ${tab === "archivadas" ? "active" : ""}`}
+          onClick={() => setTab("archivadas")}
+        >
           Archivadas
         </button>
       </div>
 
+      {/* List */}
       <div className="console-chat-items">
         {isLoading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
@@ -59,7 +147,7 @@ export function ChatList({ selectedId, onSelect }: Props) {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
-            {search ? "Sin resultados" : showArchived ? "No hay conversaciones archivadas" : "No hay conversaciones"}
+            {emptyMessage()}
           </div>
         ) : (
           filtered.map((chat) => (
@@ -67,18 +155,35 @@ export function ChatList({ selectedId, onSelect }: Props) {
               key={chat.ConversationID}
               chat={chat}
               isSelected={selectedId === chat.ConversationID}
-              isArchived={showArchived}
-              onClick={() => onSelect(chat)}
+              isArchived={isArchived}
+              hasNewActivity={chat.ConversationID ? newActivity.has(chat.ConversationID) : false}
+              onClick={() => handleSelect(chat)}
               onArchive={() => chat.ConversationID && archive.mutate(chat.ConversationID)}
               onUnarchive={() => chat.ConversationID && unarchive.mutate(chat.ConversationID)}
-              onToggleMode={() =>
-                chat.ConversationID &&
-                toggleMode.mutate({ id: chat.ConversationID, currentMode: chat.Mode ?? "auto" })
-              }
+              onToggleMode={() => {
+                if (chat.ConversationID) {
+                  const currentMode = chat.Mode ?? "auto";
+                  toggleMode.mutate(
+                    { id: chat.ConversationID, currentMode },
+                    {
+                      onSuccess: () => {
+                        const newMode = currentMode.toUpperCase() === "AUTO" ? "MANUAL" : "AUTO";
+                        onModeToggled?.(chat.ConversationID!, newMode);
+                      },
+                    }
+                  );
+                }
+              }}
               onChangeStatus={(status) =>
                 chat.ConversationID && setStatus.mutate({ id: chat.ConversationID, status })
               }
-              onMarkRead={() => chat.ConversationID && markRead.mutate(chat.ConversationID)}
+              onMarkRead={() => {
+                if (chat.ConversationID) {
+                  markRead.mutate(chat.ConversationID);
+                  clearNewActivity(chat.ConversationID);
+                }
+              }}
+              onMarkUnread={() => handleMarkUnread(chat)}
             />
           ))
         )}

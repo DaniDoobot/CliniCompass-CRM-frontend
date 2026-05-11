@@ -2,32 +2,54 @@ import { useState, useRef, useEffect } from "react";
 import { useDoobotMessages } from "@/hooks/useDoobotMessages";
 import { MessageBubble } from "./MessageBubble";
 import type { ChatItem } from "@/lib/doobotApi";
-import { Send, Plus, Loader2, Info, ToggleLeft, ToggleRight, MessageSquare } from "lucide-react";
+import { Send, Plus, Loader2, Info, MessageSquare } from "lucide-react";
 
 interface Props {
   chat: ChatItem | null;
   onToggleInfo: () => void;
   onToggleMode: () => void;
+  onSwitchToManual: () => void;
   onOpenSendOptions: () => void;
 }
 
-export function ChatView({ chat, onToggleInfo, onToggleMode, onOpenSendOptions }: Props) {
+export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, onOpenSendOptions }: Props) {
   const [text, setText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevMsgCount = useRef(0);
 
   const { messages, isLoading, sendText } = useDoobotMessages(chat?.ConversationID ?? null);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length === 0) return;
+    const isNew = messages.length !== prevMsgCount.current;
+    prevMsgCount.current = messages.length;
+    if (isNew) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+    }
   }, [messages]);
 
+  // Focus input and scroll to bottom when chat changes
   useEffect(() => {
+    prevMsgCount.current = 0;
     inputRef.current?.focus();
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    });
   }, [chat?.ConversationID]);
 
   const handleSend = () => {
     if (!text.trim() || !chat?.ClientPhone || !chat?.ConversationID) return;
+
+    // Auto-switch to manual when sending a message from console
+    const currentMode = (chat.Mode ?? "auto").toLowerCase();
+    if (currentMode === "auto") {
+      onSwitchToManual();
+    }
+
     sendText.mutate(
       { phone: chat.ClientPhone, text: text.trim() },
       { onSuccess: () => setText("") }
@@ -41,11 +63,12 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onOpenSendOptions }
     }
   };
 
+  // Empty state
   if (!chat) {
     return (
       <div className="console-chat-view">
         <div className="console-empty-state">
-          <MessageSquare size={64} />
+          <MessageSquare size={64} strokeWidth={1} style={{ color: "hsl(var(--muted-foreground))", opacity: 0.4 }} />
           <p>Selecciona una conversación para empezar</p>
         </div>
       </div>
@@ -54,30 +77,39 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onOpenSendOptions }
 
   const name = chat.ClientAlias || chat.ClientPhone || "Desconocido";
   const mode = (chat.Mode ?? "auto").toLowerCase();
-  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="console-chat-view">
+      {/* Header */}
       <div className="console-chat-view-header">
         <div className="console-chat-avatar" style={{ width: 38, height: 38, fontSize: 13 }}>
           {initials}
         </div>
         <div className="console-chat-view-header-info">
           <h3>{name}</h3>
-          <p>{chat.ClientPhone} · {mode === "auto" ? "🤖 Auto" : "👤 Manual"}</p>
+          <p>{chat.ClientPhone}</p>
         </div>
-        <button
-          className="console-attach-btn"
+        <div
+          className={`console-mode-toggle ${mode}`}
           onClick={onToggleMode}
           title={`Cambiar a ${mode === "auto" ? "manual" : "auto"}`}
         >
-          {mode === "auto" ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-        </button>
-        <button className="console-attach-btn" onClick={onToggleInfo} title="Información del contacto">
+          <span className={`console-mode-label ${mode === "auto" ? "active" : ""}`}>Auto</span>
+          <span className={`console-mode-label ${mode === "manual" ? "active" : ""}`}>Manual</span>
+          <div className="console-mode-slider" />
+        </div>
+        <button className="console-attach-btn" onClick={onToggleInfo} title="Información">
           <Info size={18} />
         </button>
       </div>
 
+      {/* Messages */}
       <div className="console-messages-area">
         {isLoading ? (
           <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
@@ -93,6 +125,7 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onOpenSendOptions }
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input */}
       <div className="console-input-area">
         <button className="console-attach-btn" onClick={onOpenSendOptions} title="Envío avanzado">
           <Plus size={20} />

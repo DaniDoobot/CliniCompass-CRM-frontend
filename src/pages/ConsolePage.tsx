@@ -5,7 +5,7 @@ import { ChatList } from "@/components/console/ChatList";
 import { ChatView } from "@/components/console/ChatView";
 import { ConversationInfo } from "@/components/console/ConversationInfo";
 import { SendOptionsDialog } from "@/components/console/SendOptionsDialog";
-import { useDoobotChats } from "@/hooks/useDoobotChats";
+import { useDoobotChats, clearNewActivity, setViewedConversation } from "@/hooks/useDoobotChats";
 import type { ChatItem } from "@/lib/doobotApi";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import "@/components/console/console.css";
@@ -18,9 +18,10 @@ function ConsoleContent() {
 
   const { toggleMode } = useDoobotChats(false);
 
+  // Login state
   if (isLoggingIn) {
     return (
-      <AppLayout>
+      <AppLayout consoleMode>
         <div className="console-root">
           <div className="console-login-state">
             <div className="spinner" />
@@ -35,7 +36,7 @@ function ConsoleContent() {
 
   if (!isLoggedIn) {
     return (
-      <AppLayout>
+      <AppLayout consoleMode>
         <div className="console-root">
           <div className="console-login-state">
             <AlertCircle size={48} style={{ color: "hsl(var(--destructive))", opacity: 0.6 }} />
@@ -47,7 +48,11 @@ function ConsoleContent() {
                 {loginError}
               </p>
             )}
-            <button className="console-info-btn" onClick={login} style={{ marginTop: 8 }}>
+            <button
+              className="console-info-btn"
+              onClick={login}
+              style={{ marginTop: 8 }}
+            >
               <RefreshCw size={14} /> Reintentar
             </button>
           </div>
@@ -62,9 +67,13 @@ function ConsoleContent() {
       { id: selectedChat.ConversationID, currentMode: selectedChat.Mode ?? "auto" },
       {
         onSuccess: () => {
+          // Update local state
           setSelectedChat((prev) =>
             prev
-              ? { ...prev, Mode: (prev.Mode ?? "auto").toUpperCase() === "AUTO" ? "MANUAL" : "AUTO" }
+              ? {
+                  ...prev,
+                  Mode: (prev.Mode ?? "auto").toUpperCase() === "AUTO" ? "MANUAL" : "AUTO",
+                }
               : null
           );
         },
@@ -72,27 +81,54 @@ function ConsoleContent() {
     );
   };
 
+  /** Switch to manual mode when user sends a message from console */
+  const handleSwitchToManual = () => {
+    if (!selectedChat?.ConversationID) return;
+    if ((selectedChat.Mode ?? "auto").toUpperCase() === "AUTO") {
+      toggleMode.mutate(
+        { id: selectedChat.ConversationID, currentMode: "auto" },
+        {
+          onSuccess: () => {
+            setSelectedChat((prev) =>
+              prev ? { ...prev, Mode: "MANUAL" } : null
+            );
+          },
+        }
+      );
+    }
+  };
+
   return (
-    <AppLayout>
+    <AppLayout consoleMode>
       <div className="console-root">
-        {/* Izquierda — Lista de conversaciones */}
+        {/* Left — Chat List */}
         <ChatList
           selectedId={selectedChat?.ConversationID ?? null}
           onSelect={(chat) => {
             setSelectedChat(chat);
+            setViewedConversation(chat.ConversationID);
             setShowInfo(false);
+          }}
+          onModeToggled={(convId, newMode) => {
+            // Sync selectedChat if the toggled chat is the currently viewed one
+            setSelectedChat((prev) =>
+              prev && prev.ConversationID === convId
+                ? { ...prev, Mode: newMode }
+                : prev
+            );
           }}
         />
 
-        {/* Centro — Vista de mensajes */}
+        {/* Center — Chat View */}
         <ChatView
           chat={selectedChat}
           onToggleInfo={() => setShowInfo((v) => !v)}
           onToggleMode={handleToggleMode}
+          onSwitchToManual={handleSwitchToManual}
           onOpenSendOptions={() => setShowSendOptions(true)}
         />
 
-        {/* Derecha — Panel de info del contacto */}
+        {/* Right — Info Panel */}
         {showInfo && selectedChat && (
           <ConversationInfo
             chat={selectedChat}
@@ -100,7 +136,7 @@ function ConsoleContent() {
           />
         )}
 
-        {/* Diálogo de envío avanzado */}
+        {/* Send Options Dialog */}
         {showSendOptions && selectedChat && (
           <SendOptionsDialog
             chat={selectedChat}

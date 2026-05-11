@@ -4,14 +4,12 @@
 
 .console-root {
   display: flex;
-  /* Cancela el p-6 (1.5rem = 24px) del <main> de AppLayout en los 4 lados.
-     La altura descuenta: header (56px) + footer (49px) + padding top/bottom del main (48px). */
-  height: calc(100vh - 56px - 49px - 48px);
-  margin: -1.5rem;
+  flex: 1;
+  height: 100%;
   overflow: hidden;
   background: hsl(var(--background));
-  border-radius: 12px;
-  border: 1px solid hsl(var(--border));
+  border-radius: 0;
+  border-top: 1px solid hsl(var(--border));
 }
 
 /* ── CHAT LIST (Left panel) ── */
@@ -90,6 +88,22 @@
   border-bottom-color: hsl(var(--primary));
 }
 
+.console-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: hsl(var(--primary));
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
 .console-chat-items {
   flex: 1;
   overflow-y: auto;
@@ -117,7 +131,18 @@
   border-left: 3px solid hsl(var(--primary));
 }
 
+.console-chat-item.new-activity {
+  background: hsl(142 76% 36% / 0.06);
+  animation: newActivityPulse 2s ease-in-out 1;
+}
+
+@keyframes newActivityPulse {
+  0% { background: hsl(142 76% 36% / 0.18); }
+  100% { background: hsl(142 76% 36% / 0.06); }
+}
+
 .console-chat-avatar {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -129,6 +154,23 @@
   color: white;
   flex-shrink: 0;
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7));
+}
+
+.console-new-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: hsl(142 76% 36%);
+  border: 2px solid hsl(var(--card));
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
 }
 
 .console-chat-info {
@@ -181,21 +223,87 @@
   padding: 0 5px;
 }
 
-.console-mode-badge {
+/* ── Mode toggle pill ── */
+.console-mode-pill {
   font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 10px;
+  border-radius: 12px;
   font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.4;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.console-mode-badge.auto {
-  background: hsl(142 76% 36% / 0.15);
-  color: hsl(142 76% 36%);
+.console-mode-pill.auto {
+  background: hsl(142 76% 36% / 0.12);
+  color: hsl(142 60% 32%);
+  border: 1px solid hsl(142 76% 36% / 0.25);
 }
 
-.console-mode-badge.manual {
-  background: hsl(38 92% 50% / 0.15);
-  color: hsl(38 92% 50%);
+.console-mode-pill.auto:hover {
+  background: hsl(142 76% 36% / 0.22);
+}
+
+.console-mode-pill.manual {
+  background: hsl(225 70% 55% / 0.12);
+  color: hsl(225 70% 45%);
+  border: 1px solid hsl(225 70% 55% / 0.25);
+}
+
+.console-mode-pill.manual:hover {
+  background: hsl(225 70% 55% / 0.22);
+}
+
+/* ── Mode toggle slider (in chat header) ── */
+.console-mode-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: hsl(var(--muted));
+  border-radius: 16px;
+  padding: 2px;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.console-mode-label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 14px;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.25s ease;
+  white-space: nowrap;
+}
+
+.console-mode-label.active {
+  color: white;
+}
+
+.console-mode-slider {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: calc(50% - 2px);
+  border-radius: 14px;
+  transition: left 0.25s ease, background 0.25s ease;
+}
+
+.console-mode-toggle.auto .console-mode-slider {
+  left: 2px;
+  background: hsl(142 60% 40%);
+}
+
+.console-mode-toggle.manual .console-mode-slider {
+  left: calc(50%);
+  background: hsl(225 65% 52%);
 }
 
 /* ── CHAT VIEW (Center panel) ── */
@@ -239,8 +347,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background-color: hsl(var(--muted) / 0.2);
-  background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+  background-color: hsl(225 20% 95%);
+  background-image: url('/chat-bg.png');
+  background-size: 420px;
   background-repeat: repeat;
 }
 
@@ -302,7 +411,7 @@
 }
 
 .console-msg-row.from-panel .console-msg-bubble {
-  background: hsl(var(--primary) / 0.12);
+  background: hsl(225 60% 92%);
   color: hsl(var(--foreground));
   border-bottom-right-radius: 4px;
 }
