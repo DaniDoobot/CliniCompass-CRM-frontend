@@ -163,8 +163,7 @@ export function useDoobotChats(showArchived: boolean = false, enabled: boolean =
 
   const toggleMode = useMutation({
     mutationFn: ({ id, currentMode }: { id: string; currentMode: string }) => {
-      const target = currentMode.toUpperCase() === "AUTO" ? "MANUAL" : "AUTO";
-      return apiChangeMode(id, target);
+      return apiChangeMode(id, currentMode);
     },
     onSuccess: invalidate,
   });

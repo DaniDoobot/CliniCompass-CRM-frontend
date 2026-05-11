@@ -6,6 +6,7 @@
   display: flex;
   flex: 1;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: hsl(var(--background));
   border-radius: 0;
@@ -276,7 +277,11 @@
   z-index: 1;
   font-size: 11px;
   font-weight: 600;
-  padding: 4px 12px;
+  padding: 0 12px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 14px;
   color: hsl(var(--muted-foreground));
   transition: color 0.25s ease;
@@ -306,12 +311,12 @@
   background: hsl(225 65% 52%);
 }
 
-/* ── CHAT VIEW (Center panel) ── */
 .console-chat-view {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   background: hsl(var(--background));
 }
 
