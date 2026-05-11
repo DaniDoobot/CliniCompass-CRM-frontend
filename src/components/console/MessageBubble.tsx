@@ -1,70 +1,94 @@
 import type { ParsedMessage } from "@/hooks/useDoobotMessages";
-import { FileText, Image, Video } from "lucide-react";
 
 interface Props {
   message: ParsedMessage;
 }
 
-function formatTime(time: string): string {
-  if (!time) return "";
-  const d = new Date(time.trim().replace(/^(\d{2})-(\d{2})-(\d{4})/, "$3-$2-$1"));
-  if (!isNaN(d.getTime())) {
-    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-  }
-  const match = time.match(/(\d{2}:\d{2})/);
-  return match ? match[1] : "";
-}
-
 export function MessageBubble({ message }: Props) {
-  const { text, fromUser, time, buttons, isDocument, imageUrl, videoUrl, status, who } = message;
+  const side = message.fromUser ? "from-panel" : "from-client";
+  const whoLabel =
+    message.who === "CLIENT"
+      ? undefined
+      : message.who === "BOT"
+        ? "🤖 Bot"
+        : message.who === "PANEL"
+          ? "👤 Agente"
+          : message.who ?? undefined;
 
   return (
-    <div className={`console-msg-row ${fromUser ? "from-panel" : "from-client"}`}>
-      <div className="console-msg-bubble">
-        {/* Indicador de quién envió */}
-        {fromUser && who && who.toUpperCase() !== "BOT" && (
-          <div className="console-msg-who">{who}</div>
+    <div className={`console-msg-row ${side}`}>
+      <div className={`console-msg-bubble ${message.isDocument ? "document" : ""}`}>
+        {/* Who label for outgoing messages */}
+        {message.fromUser && whoLabel && (
+          <div className="console-msg-who">{whoLabel}</div>
         )}
 
-        {/* Contenido */}
-        {imageUrl ? (
-          <div>
-            <Image size={14} style={{ marginRight: 4 }} />
-            <span style={{ fontSize: 12, opacity: 0.7 }}>Imagen</span>
-            {text && <p style={{ marginTop: 4 }}>{text}</p>}
-          </div>
-        ) : videoUrl ? (
-          <div>
-            <Video size={14} style={{ marginRight: 4 }} />
-            <span style={{ fontSize: 12, opacity: 0.7 }}>Vídeo</span>
-            {text && <p style={{ marginTop: 4 }}>{text}</p>}
-          </div>
-        ) : isDocument ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <FileText size={16} />
-            <span>{text || "Documento"}</span>
-          </div>
-        ) : (
-          <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{text}</p>
+        {/* Image */}
+        {message.imageUrl && (
+          <img
+            src={message.imageUrl}
+            alt="Imagen"
+            className="console-msg-image"
+            loading="lazy"
+          />
         )}
 
-        {/* Botones */}
-        {buttons && buttons.length > 0 && (
+        {/* Video */}
+        {message.videoUrl && (
+          <video
+            src={message.videoUrl}
+            controls
+            className="console-msg-video"
+            preload="metadata"
+          />
+        )}
+
+        {/* Text */}
+        {message.text && (
+          <div style={{ whiteSpace: "pre-wrap" }}>{message.text}</div>
+        )}
+
+        {/* Buttons */}
+        {message.buttons && message.buttons.length > 0 && (
           <div className="console-msg-buttons">
-            {buttons.map((b) => (
-              <div key={b.id} className="console-msg-btn">{b.text}</div>
+            {message.buttons.map((btn, i) => (
+              <div key={i} className="console-msg-btn">
+                {btn.text}
+              </div>
             ))}
           </div>
         )}
 
-        {/* Footer: hora */}
+        {/* Time */}
         <div className="console-msg-time">
-          <span>{formatTime(time)}</span>
-          {fromUser && status && (
-            <span style={{ marginLeft: 4, opacity: 0.7 }}>{status}</span>
+          {formatTime(message.time)}
+          {message.fromUser && message.status && (
+            <span style={{ marginLeft: 4 }}>{statusIcon(message.status)}</span>
           )}
         </div>
       </div>
     </div>
   );
+}
+
+function formatTime(raw: string): string {
+  if (!raw) return "";
+  // Try to extract HH:mm from formats like "dd-MM-yyyy HH:mm:ss"
+  const match = raw.match(/(\d{2}:\d{2})/);
+  return match ? match[1] : raw;
+}
+
+function statusIcon(status: string): string {
+  switch (status?.toLowerCase()) {
+    case "sent":
+      return "✓";
+    case "delivered":
+      return "✓✓";
+    case "read":
+      return "✓✓"; // would be blue in a real impl
+    case "failed":
+      return "⚠️";
+    default:
+      return "";
+  }
 }
