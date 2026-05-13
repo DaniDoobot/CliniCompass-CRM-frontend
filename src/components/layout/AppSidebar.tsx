@@ -100,11 +100,20 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"} 
-                      className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all duration-200" 
-                      activeClassName="bg-blue-50 text-blue-600 font-semibold"
+                      className={cn(
+                        "flex items-center gap-3 w-full transition-all duration-200",
+                        collapsed ? "justify-center px-0" : "px-3 py-2"
+                      )}
+                      activeClassName={cn(
+                        "bg-blue-50 text-blue-600 font-semibold rounded-lg",
+                        collapsed ? "bg-blue-100" : ""
+                      )}
                     >
-                      <item.icon className={cn("h-4 w-4", location.pathname === item.url ? "text-blue-600" : "")} />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className={cn(
+                        "h-5 w-5 shrink-0", 
+                        location.pathname === item.url ? "text-blue-600" : "text-sidebar-foreground/70"
+                      )} />
+                      {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -137,14 +146,16 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
-      <SidebarHeader className={cn("mb-2 transition-all duration-300 flex items-center justify-center", collapsed ? "p-0 h-20" : "p-6 pt-10")}>
-        <div className="flex items-center justify-center w-full">
+      <SidebarHeader className={cn("mb-2 transition-all duration-300 flex items-center justify-center", collapsed ? "p-0 h-20" : "p-2 pt-6")}>
+        <div className="flex items-center justify-center w-full px-2">
           {collapsed ? (
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
               <Stethoscope className="h-6 w-6 text-white" />
             </div>
           ) : (
-            <img src={nweeLogo} alt="nwee" className="h-20 w-auto object-contain transition-all duration-300" />
+            <div className="relative w-full flex justify-center">
+              <img src={nweeLogo} alt="nwee" className="h-32 w-auto object-contain transition-all duration-300 scale-110" />
+            </div>
           )}
         </div>
       </SidebarHeader>
