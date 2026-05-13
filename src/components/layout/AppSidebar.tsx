@@ -100,14 +100,13 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
                     asChild 
                     isActive={location.pathname === item.url} 
                     tooltip={item.title}
-                    className={cn(collapsed ? "!p-0" : "")}
                   >
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"} 
                       className={cn(
-                        "flex items-center gap-3 w-full transition-all duration-200",
-                        collapsed ? "justify-center px-0" : "px-3 py-2"
+                        "flex items-center w-full h-full transition-all duration-200",
+                        collapsed ? "justify-center" : "gap-3 px-3 py-2"
                       )}
                       activeClassName={cn(
                         "bg-blue-50 text-blue-600 font-semibold rounded-lg",
@@ -151,7 +150,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
-      <SidebarHeader className={cn("mb-2 transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-20" : "p-0 pt-4")}>
+      <SidebarHeader className={cn("transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-24" : "p-0 pt-6")}>
         <div className="flex items-center justify-center w-full">
           {collapsed ? (
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
@@ -159,7 +158,7 @@ export function AppSidebar() {
             </div>
           ) : (
             <div className="relative w-full flex justify-center p-0">
-              <img src={nweeLogo} alt="nwee" className="h-32 w-auto object-contain transition-all duration-300 scale-125" />
+              <img src={nweeLogo} alt="nwee" className="h-16 w-auto object-contain transition-all duration-300" />
             </div>
           )}
         </div>
