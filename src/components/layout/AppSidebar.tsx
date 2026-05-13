@@ -93,7 +93,7 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={cn(collapsed ? "items-center" : "")}>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
@@ -150,7 +150,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
-      <SidebarHeader className={cn("transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-24" : "p-0 pt-6")}>
+      <SidebarHeader className={cn("transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-24" : "p-0 pt-2")}>
         <div className="flex items-center justify-center w-full">
           {collapsed ? (
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
@@ -158,7 +158,7 @@ export function AppSidebar() {
             </div>
           ) : (
             <div className="relative w-full flex justify-center p-0">
-              <img src={nweeLogo} alt="nwee" className="h-16 w-auto object-contain transition-all duration-300" />
+              <img src={nweeLogo} alt="nwee" className="h-24 w-auto object-contain transition-all duration-300" />
             </div>
           )}
         </div>
