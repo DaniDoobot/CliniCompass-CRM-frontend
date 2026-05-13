@@ -55,6 +55,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Activity, Apple, Brain, Heart, Zap, Dumbbell, Leaf, Eye, Stethoscope,
 };
 
+const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Contactos", url: "/contactos", icon: Contact },
   { title: "Leads", url: "/leads", icon: UserPlus },
