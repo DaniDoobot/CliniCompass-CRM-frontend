@@ -5,31 +5,46 @@ import type { Database } from "@/integrations/supabase/types";
 type Appointment = Database["public"]["Tables"]["appointments"]["Row"];
 type AppointmentInsert = Database["public"]["Tables"]["appointments"]["Insert"];
 
+const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/appointments-api`;
+const HEADERS = {
+  "Content-Type": "application/json",
+  "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+};
+
+export async function getPatientIdByPhone(phone: string): Promise<string | null> {
+  const normalizedPhone = phone.replace(/\D/g, "");
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/patients?select=id&phone=eq.%2B${normalizedPhone}`,
+    { headers: HEADERS }
+  );
+  if (!res.ok) {
+    const resFallback = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/patients?select=id&phone=eq.${normalizedPhone}`,
+      { headers: HEADERS }
+    );
+    if (!resFallback.ok) return null;
+    const data = await resFallback.json();
+    return data[0]?.id || null;
+  }
+  const data = await res.json();
+  return data[0]?.id || null;
+}
+
 export function useAppointments(filters?: { center_id?: string; professional_id?: string; date_from?: string; date_to?: string }) {
   return useQuery({
     queryKey: ["appointments", filters],
     queryFn: async () => {
-      let query = supabase
-        .from("appointments")
-        .select("*, patient:patients(first_name, last_name), service:services(name, business_line), professional:staff_profiles(first_name, last_name), center:centers(name)")
-        .order("start_time", { ascending: true });
+      const params = new URLSearchParams();
+      if (filters?.center_id && filters.center_id !== "all") params.append("center_id", filters.center_id);
+      if (filters?.professional_id && filters.professional_id !== "all") params.append("professional_id", filters.professional_id);
+      if (filters?.date_from) params.append("date_from", filters.date_from);
+      if (filters?.date_to) params.append("date_to", filters.date_to);
 
-      if (filters?.center_id && filters.center_id !== "all") {
-        query = query.eq("center_id", filters.center_id);
-      }
-      if (filters?.professional_id && filters.professional_id !== "all") {
-        query = query.eq("professional_id", filters.professional_id);
-      }
-      if (filters?.date_from) {
-        query = query.gte("start_time", filters.date_from);
-      }
-      if (filters?.date_to) {
-        query = query.lte("start_time", filters.date_to);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      const res = await fetch(`${API_URL}?${params.toString()}`, { headers: HEADERS });
+      if (!res.ok) throw new Error("Error fetching appointments from API");
+      const result = await res.json();
+      return result.data;
     },
   });
 }
@@ -38,9 +53,17 @@ export function useCreateAppointment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (apt: AppointmentInsert) => {
-      const { data, error } = await supabase.from("appointments").insert(apt).select().single();
-      if (error) throw error;
-      return data;
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: HEADERS,
+        body: JSON.stringify(apt),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Error creating appointment");
+      }
+      const result = await res.json();
+      return result.data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["appointments"] }),
   });
@@ -50,9 +73,17 @@ export function useUpdateAppointment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Appointment> & { id: string }) => {
-      const { data, error } = await supabase.from("appointments").update(updates).eq("id", id).select().single();
-      if (error) throw error;
-      return data;
+      const res = await fetch(API_URL, {
+        method: "PATCH",
+        headers: HEADERS,
+        body: JSON.stringify({ id, ...updates }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Error updating appointment");
+      }
+      const result = await res.json();
+      return result.data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });

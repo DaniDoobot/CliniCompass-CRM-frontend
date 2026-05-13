@@ -26,6 +26,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 import nweeLogo from "@/assets/nwee-logo.png";
+import doobotLogo from "@/assets/doobot-logo.png";
+import { cn } from "@/lib/utils";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,13 +55,13 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Activity, Apple, Brain, Heart, Zap, Dumbbell, Leaf, Eye, Stethoscope,
 };
 
-const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Contactos", url: "/contactos", icon: Contact },
   { title: "Leads", url: "/leads", icon: UserPlus },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Negocios", url: "/negocios", icon: Briefcase },
   { title: "Agenda", url: "/agenda", icon: CalendarDays },
+  { title: "Speech Analytics", url: "/speech-analytics", icon: Activity },
   { title: "Centros", url: "/centros", icon: Building2 },
   { title: "Consola", url: "/consola", icon: MessageSquare },
 ];
@@ -94,8 +96,13 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.url} tooltip={item.title}>
-                    <NavLink to={item.url} end={item.url === "/"} className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-                      <item.icon className="h-4 w-4" />
+                    <NavLink 
+                      to={item.url} 
+                      end={item.url === "/"} 
+                      className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all duration-200" 
+                      activeClassName="bg-blue-50 text-blue-600 font-semibold"
+                    >
+                      <item.icon className={cn("h-4 w-4", location.pathname === item.url ? "text-blue-600" : "")} />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -128,39 +135,31 @@ export function AppSidebar() {
   const displayRole = roles.length > 0 ? roles[0].charAt(0).toUpperCase() + roles[0].slice(1) : "Sin rol";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="p-4 border-b border-sidebar-border/60">
-        <div className="flex items-center justify-center min-h-[40px]">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950">
+      <SidebarHeader className="p-4 pt-6 mb-2">
+        <div className="flex items-center px-2">
           {collapsed ? (
-            <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Stethoscope className="h-4.5 w-4.5 text-sidebar-primary-foreground" />
+            <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-600/20">
+              <Stethoscope className="h-5 w-5 text-white" />
             </div>
           ) : (
-            <img src={nweeLogo} alt="nwee — Health IA Management" className="h-10 w-auto object-contain" />
+            <img src={nweeLogo} alt="nwee" className="h-12 w-auto" />
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 pt-2">
+      <SidebarContent className="px-3 pt-0">
         <NavGroup label="Principal" items={mainNav} />
         <NavGroup label="Especialidades" items={clinicalNav} />
         <NavGroup label="Gestión" items={managementNav} />
       </SidebarContent>
 
-      <SidebarFooter className="p-3">
+      <SidebarFooter className="p-4 flex flex-col items-center gap-1 border-t border-sidebar-border/30">
         {!collapsed && (
-          <div className="flex items-center gap-2 px-2">
-            <div className="h-7 w-7 rounded-full bg-sidebar-accent flex items-center justify-center text-[11px] font-semibold text-sidebar-accent-foreground">
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-accent-foreground truncate">{displayName}</p>
-              <p className="text-[10px] text-sidebar-muted truncate">{displayRole}</p>
-            </div>
-            <button onClick={signOut} className="p-1 rounded hover:bg-sidebar-accent transition-colors" title="Cerrar sesión">
-              <LogOut className="h-3.5 w-3.5 text-sidebar-muted" />
-            </button>
-          </div>
+          <>
+            <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-400">Powered by</span>
+            <img src={doobotLogo} alt="doobot.ai_" className="h-6 w-auto opacity-80" />
+          </>
         )}
       </SidebarFooter>
     </Sidebar>

@@ -137,11 +137,16 @@ export function useBookSlot() {
       endTime: string;
       notes?: string | null;
     }) => {
-      // Create appointment
-      const { data: apt, error: aptErr } = await supabase
-        .from("appointments")
-        .insert({
-          patient_id: contactId, // legacy field
+      // Create appointment via API
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/appointments-api`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          patient_id: contactId,
           contact_id: contactId,
           center_id: centerId,
           service_id: serviceId || null,
@@ -149,12 +154,16 @@ export function useBookSlot() {
           start_time: startTime,
           end_time: endTime,
           notes: notes || null,
-        })
-        .select()
-        .single();
-      if (aptErr) throw aptErr;
+        }),
+      });
 
-      // Mark slot as occupied
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error creating appointment via API");
+      }
+      const { data: apt } = await res.json();
+
+      // Mark slot as occupied locally
       const { error: slotErr } = await supabase
         .from("availability_slots")
         .update({ status: "ocupado" as any, appointment_id: apt.id })

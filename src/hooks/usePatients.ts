@@ -53,13 +53,19 @@ export function usePatientAppointments(patientId: string | undefined) {
     queryKey: ["patient-appointments", patientId],
     enabled: !!patientId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("appointments")
-        .select("*, service:services(name, business_line), professional:staff_profiles(first_name, last_name), center:centers(name)")
-        .eq("patient_id", patientId!)
-        .order("start_time", { ascending: false });
-      if (error) throw error;
-      return data;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/appointments-api?patient_id=${patientId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Error fetching patient appointments from API");
+      const result = await res.json();
+      return result.data;
     },
   });
 }

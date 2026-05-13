@@ -21,6 +21,7 @@ import DocumentsPage from "./pages/DocumentsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import ConsolePage from "./pages/ConsolePage";
+import SpeechAnalyticsPage from "./pages/SpeechAnalyticsPage";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/agenda" element={<ProtectedRoute><AgendaPage /></ProtectedRoute>} />
             <Route path="/centros" element={<ProtectedRoute><CentersPage /></ProtectedRoute>} />
             <Route path="/consola" element={<ProtectedRoute><ConsolePage /></ProtectedRoute>} />
+            <Route path="/speech-analytics" element={<ProtectedRoute><SpeechAnalyticsPage /></ProtectedRoute>} />
             <Route path="/especialidad/:slug" element={<ProtectedRoute><SpecialtyPage /></ProtectedRoute>} />
             {/* Legacy routes */}
             <Route path="/fisioterapia" element={<Navigate to="/especialidad/fisioterapia" replace />} />
