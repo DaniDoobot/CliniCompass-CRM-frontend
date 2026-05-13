@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import nweeLogo from "@/assets/nwee-logo-crm.png";
 import doobotLogo from "@/assets/doobot-logo.png";
+import nIcon from "@/assets/nwee-n-icon.png";
 import { cn } from "@/lib/utils";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -153,8 +154,8 @@ export function AppSidebar() {
       <SidebarHeader className="h-16 flex items-center justify-center p-0 border-b border-sidebar-border/30 transition-all duration-300 overflow-hidden">
         <div className="flex items-center justify-center w-full h-full">
           {collapsed ? (
-            <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300 overflow-hidden">
-              <img src={nweeLogo} alt="n" className="h-20 w-auto max-w-none object-contain translate-x-[28px] brightness-0 invert" />
+            <div className="h-10 w-10 flex items-center justify-center flex-shrink-0 transition-all duration-300">
+              <img src={nIcon} alt="n" className="h-10 w-10 object-contain rounded-xl shadow-lg shadow-blue-600/40" />
             </div>
           ) : (
             <div className="relative w-full flex justify-center p-0">
