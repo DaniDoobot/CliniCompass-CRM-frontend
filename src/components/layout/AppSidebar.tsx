@@ -96,7 +96,12 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url} tooltip={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url} 
+                    tooltip={item.title}
+                    className={cn(collapsed ? "!p-0" : "")}
+                  >
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"} 
@@ -146,15 +151,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
-      <SidebarHeader className={cn("mb-2 transition-all duration-300 flex items-center justify-center", collapsed ? "p-0 h-20" : "p-2 pt-6")}>
-        <div className="flex items-center justify-center w-full px-2">
+      <SidebarHeader className={cn("mb-2 transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-20" : "p-0 pt-4")}>
+        <div className="flex items-center justify-center w-full">
           {collapsed ? (
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
               <Stethoscope className="h-6 w-6 text-white" />
             </div>
           ) : (
-            <div className="relative w-full flex justify-center">
-              <img src={nweeLogo} alt="nwee" className="h-32 w-auto object-contain transition-all duration-300 scale-110" />
+            <div className="relative w-full flex justify-center p-0">
+              <img src={nweeLogo} alt="nwee" className="h-32 w-auto object-contain transition-all duration-300 scale-125" />
             </div>
           )}
         </div>
@@ -166,11 +171,11 @@ export function AppSidebar() {
         <NavGroup label="Gestión" items={managementNav} />
       </SidebarContent>
 
-      <SidebarFooter className="p-6 flex flex-col items-center gap-2 border-t border-sidebar-border/30">
+      <SidebarFooter className="p-3 flex flex-col items-center gap-1 border-t border-sidebar-border/30">
         {!collapsed && (
           <>
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">Powered by</span>
-            <img src={doobotLogo} alt="doobot.ai_" className="h-8 w-auto opacity-90 transition-all duration-300" />
+            <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-400">Powered by</span>
+            <img src={doobotLogo} alt="doobot.ai_" className="h-7 w-auto opacity-90 transition-all duration-300" />
           </>
         )}
       </SidebarFooter>
