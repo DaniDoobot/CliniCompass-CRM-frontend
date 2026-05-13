@@ -153,8 +153,8 @@ export function AppSidebar() {
       <SidebarHeader className="h-16 flex items-center justify-center p-0 border-b border-sidebar-border/30 transition-all duration-300 overflow-hidden">
         <div className="flex items-center justify-center w-full h-full">
           {collapsed ? (
-            <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
-              <span className="text-white font-black text-xl italic tracking-tighter">n</span>
+            <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300 overflow-hidden">
+              <img src={nweeLogo} alt="n" className="h-20 w-auto max-w-none object-contain translate-x-[28px] brightness-0 invert" />
             </div>
           ) : (
             <div className="relative w-full flex justify-center p-0">
