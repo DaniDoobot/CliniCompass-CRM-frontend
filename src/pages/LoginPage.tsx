@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import nweeLogo from "@/assets/nwee-logo.png";
+import nweeLogo from "@/assets/nwee-logo-crm.png";
 import doobotLogo from "@/assets/doobot-logo.png";
 
 export default function LoginPage() {
@@ -32,8 +32,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src={nweeLogo} alt="nwee — Health IA Management" className="h-14 w-auto object-contain mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground mt-1">Gestión sanitaria integral</p>
+          <img src={nweeLogo} alt="nwee — Health IA Management" className="h-20 w-auto object-contain mx-auto" />
         </div>
 
         <div className="bg-card rounded-xl border shadow-sm p-6">

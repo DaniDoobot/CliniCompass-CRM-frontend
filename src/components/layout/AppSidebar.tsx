@@ -150,11 +150,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
-      <SidebarHeader className={cn("transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-24" : "p-0 pt-2")}>
+      <SidebarHeader className={cn("transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-16" : "p-0 pt-4")}>
         <div className="flex items-center justify-center w-full">
           {collapsed ? (
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
-              <Stethoscope className="h-6 w-6 text-white" />
+              <span className="text-white font-black text-xl italic tracking-tighter">n</span>
             </div>
           ) : (
             <div className="relative w-full flex justify-center p-0">
