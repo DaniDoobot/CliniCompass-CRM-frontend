@@ -32,7 +32,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src={nweeLogo} alt="nwee — Health IA Management" className="h-20 w-auto object-contain mx-auto" />
+          <img src={nweeLogo} alt="nwee — Health IA Management" className="h-40 w-auto object-contain mx-auto" />
         </div>
 
         <div className="bg-card rounded-xl border shadow-sm p-6">

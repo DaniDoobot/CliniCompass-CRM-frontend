@@ -150,15 +150,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
-      <SidebarHeader className={cn("transition-all duration-300 flex items-center justify-center overflow-hidden", collapsed ? "p-0 h-16" : "p-0 pt-4")}>
-        <div className="flex items-center justify-center w-full">
+      <SidebarHeader className="h-16 flex items-center justify-center p-0 border-b border-sidebar-border/30 transition-all duration-300 overflow-hidden">
+        <div className="flex items-center justify-center w-full h-full">
           {collapsed ? (
             <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/40 transition-all duration-300">
               <span className="text-white font-black text-xl italic tracking-tighter">n</span>
             </div>
           ) : (
             <div className="relative w-full flex justify-center p-0">
-              <img src={nweeLogo} alt="nwee" className="h-24 w-auto object-contain transition-all duration-300" />
+              <img src={nweeLogo} alt="nwee" className="h-20 w-auto object-contain transition-all duration-300 -mb-2" />
             </div>
           )}
         </div>
