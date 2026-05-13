@@ -25,7 +25,7 @@ import {
   type LucideIcon,
   MessageSquare,
 } from "lucide-react";
-import nweeLogo from "@/assets/nwee-logo.png";
+import nweeLogo from "@/assets/nwee-logo-crm.png";
 import doobotLogo from "@/assets/doobot-logo.png";
 import { cn } from "@/lib/utils";
 import { NavLink } from "@/components/NavLink";
@@ -136,15 +136,15 @@ export function AppSidebar() {
   const displayRole = roles.length > 0 ? roles[0].charAt(0).toUpperCase() + roles[0].slice(1) : "Sin rol";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950">
-      <SidebarHeader className="p-4 pt-6 mb-2">
-        <div className="flex items-center px-2">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
+      <SidebarHeader className={cn("p-4 pt-6 mb-2 transition-all duration-300", collapsed ? "px-0 flex items-center justify-center" : "px-6")}>
+        <div className="flex items-center min-h-[48px]">
           {collapsed ? (
-            <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-blue-600/20">
+            <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/30">
               <Stethoscope className="h-5 w-5 text-white" />
             </div>
           ) : (
-            <img src={nweeLogo} alt="nwee" className="h-12 w-auto" />
+            <img src={nweeLogo} alt="nwee" className="h-14 w-auto object-contain" />
           )}
         </div>
       </SidebarHeader>
