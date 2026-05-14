@@ -73,17 +73,15 @@ export function useUpdateAppointment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Appointment> & { id: string }) => {
-      const res = await fetch(API_URL, {
-        method: "PATCH",
-        headers: HEADERS,
-        body: JSON.stringify({ id, ...updates }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Error updating appointment");
-      }
-      const result = await res.json();
-      return result.data;
+      const { data, error } = await supabase
+        .from("appointments")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["appointments"] });
