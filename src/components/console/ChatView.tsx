@@ -27,10 +27,10 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
     const isNew = messages.length !== prevMsgCount.current;
     prevMsgCount.current = messages.length;
     
-    // Only scroll if it's new messages AND it's NOT the first load
-    if (isNew && !isFirstLoad) {
+    if (isNew) {
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // Instant scroll for initial load, smooth scroll for new incoming messages
+        messagesEndRef.current?.scrollIntoView({ behavior: isFirstLoad ? "auto" : "smooth" });
       });
     }
   }, [messages]);
