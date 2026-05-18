@@ -14,7 +14,7 @@ function loadFavicon(callback: () => void) {
     return;
   }
   const img = new Image();
-  img.src = "/favicon.png";
+  img.src = "/favicon.png?v=3";
   img.onload = () => {
     faviconImage = img;
     callback();
