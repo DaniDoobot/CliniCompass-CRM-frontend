@@ -127,7 +127,7 @@ export function addNewActivity(conversationId: string) {
  * re-renders when it changes.
  */
 export function useNewActivity(): ReadonlySet<string> {
-  const [, setTick] = useReactState(0);
+  const [tick, setTick] = useReactState(0);
 
   useEffect(() => {
     const listener = () => setTick((t) => t + 1);
