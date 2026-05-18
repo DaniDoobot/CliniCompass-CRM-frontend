@@ -31,6 +31,7 @@ export interface ParsedMessage {
   isDocument: boolean;
   imageUrl?: string;
   videoUrl?: string;
+  audioUrl?: string;
   status?: string;
   who?: string;
 }
@@ -67,6 +68,7 @@ function extractText(msg: MessageItem): string {
     case "text": return json.text?.body ?? raw;
     case "image": return json.image?.caption ?? "";
     case "video": return json.video?.caption ?? "";
+    case "audio": return json.transcription ?? json.text ?? json.audio?.transcription ?? "";
     case "button": return json.button?.text ?? json.button?.payload ?? raw;
     case "document": {
       const label = (json.document?.caption ?? "") || (json.document?.filename ?? "");
@@ -135,6 +137,12 @@ function extractVideoUrl(msg: MessageItem): string | undefined {
   return json.video?.link || undefined;
 }
 
+function extractAudioUrl(msg: MessageItem): string | undefined {
+  const json = safeJsonParse(msg.Body ?? "");
+  if (!json || effectiveType(msg, json) !== "audio") return undefined;
+  return json.audio?.link || json.audio?.url || undefined;
+}
+
 function isDocumentMessage(msg: MessageItem): boolean {
   const json = safeJsonParse(msg.Body ?? "");
   if (!json) return msg.Type?.toLowerCase() === "document";
@@ -158,6 +166,7 @@ function parseMessages(items: MessageItem[]): ParsedMessage[] {
       isDocument: isDocumentMessage(msg),
       imageUrl: extractImageUrl(msg),
       videoUrl: extractVideoUrl(msg),
+      audioUrl: extractAudioUrl(msg),
       status: msg.Status ?? undefined,
       who: msg.Who ?? undefined,
     }));

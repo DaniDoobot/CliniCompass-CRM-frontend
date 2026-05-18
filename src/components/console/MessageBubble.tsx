@@ -1,10 +1,14 @@
 import type { ParsedMessage } from "@/hooks/useDoobotMessages";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   message: ParsedMessage;
 }
 
 export function MessageBubble({ message }: Props) {
+  const { profile } = useAuth();
+  const agentName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : "Agente";
+
   const side = message.fromUser ? "from-panel" : "from-client";
   const whoLabel =
     message.who === "CLIENT"
@@ -12,7 +16,7 @@ export function MessageBubble({ message }: Props) {
       : message.who === "BOT"
         ? "🤖 Bot"
         : message.who === "PANEL"
-          ? "👤 Agente"
+          ? `👤 Agente (${agentName})`
           : message.who ?? undefined;
 
   return (
@@ -41,6 +45,19 @@ export function MessageBubble({ message }: Props) {
             className="console-msg-video"
             preload="metadata"
           />
+        )}
+
+        {/* Audio */}
+        {message.audioUrl && (
+          <div className="console-msg-audio" style={{ marginBottom: 8 }}>
+            <audio
+              src={message.audioUrl}
+              controls
+              controlsList="nodownload"
+              preload="metadata"
+              style={{ width: "100%", height: 40, minWidth: 220 }}
+            />
+          </div>
         )}
 
         {/* Text */}
@@ -75,8 +92,8 @@ export function MessageBubble({ message }: Props) {
 
 function formatTime(raw: string): string {
   if (!raw) return "";
-  // Try to extract HH:mm from formats like "dd-MM-yyyy HH:mm:ss"
-  const match = raw.match(/(\d{2}:\d{2})/);
+  // Try to extract dd-MM-yyyy HH:mm from formats like "dd-MM-yyyy HH:mm:ss"
+  const match = raw.match(/(\d{2}-\d{2}-\d{4} \d{2}:\d{2})/);
   return match ? match[1] : raw;
 }
 
