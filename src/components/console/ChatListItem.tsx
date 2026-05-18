@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type { ChatItem } from "@/lib/doobotApi";
 import { StatusCatalog } from "@/lib/doobotConfig";
 import { Archive, ArchiveRestore, Eye, EyeOff, Tag } from "lucide-react";
+import { parseDoobotTimestamp } from "./ChatList";
 
 interface Props {
   chat: ChatItem;
@@ -152,18 +153,15 @@ export function ChatListItem({
 }
 
 function formatChatTime(timestamp: string | null): string {
-  if (!timestamp) return "";
-  // Try parsing as "yyyy-MM-dd HH:mm:ss" or timestamp
-  const d = new Date(timestamp);
-  if (!isNaN(d.getTime())) {
-    const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    if (isToday) {
-      return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-    }
-    return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" });
+  const timeMs = parseDoobotTimestamp(timestamp);
+  if (!timeMs) return "";
+  
+  const d = new Date(timeMs);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  
+  if (isToday) {
+    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
   }
-  // Fallback: try to extract time
-  const match = timestamp.match(/(\d{2}:\d{2})/);
-  return match ? match[1] : timestamp.slice(0, 10);
+  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }

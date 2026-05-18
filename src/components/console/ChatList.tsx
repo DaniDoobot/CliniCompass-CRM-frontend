@@ -13,14 +13,17 @@ interface Props {
   onModeToggled?: (conversationId: string, newMode: string) => void;
 }
 
-/** Parse a chat timestamp to epoch-ms for sorting. */
-function chatTimestampMs(ts: string | null): number {
+/** Parse a chat timestamp to epoch-ms for sorting. Avoids JS Date confusing dd-mm with mm-dd. */
+export function parseDoobotTimestamp(ts: string | null): number {
   if (!ts) return 0;
+  // Always try strict dd-MM-yyyy HH:mm:ss first
+  const m = ts.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) {
+    return new Date(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:${m[6] || '00'}`).getTime();
+  }
+  // Fallback
   const d = new Date(ts);
   if (!isNaN(d.getTime())) return d.getTime();
-  // Try dd-MM-yyyy HH:mm:ss
-  const m = ts.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/);
-  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00`).getTime() || 0;
   return 0;
 }
 
@@ -55,7 +58,7 @@ export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
       const aUnread = hasUnread(a) ? 1 : 0;
       const bUnread = hasUnread(b) ? 1 : 0;
       if (bUnread !== aUnread) return bUnread - aUnread;
-      return chatTimestampMs(b.LastMessageTimestamp) - chatTimestampMs(a.LastMessageTimestamp);
+      return parseDoobotTimestamp(b.LastMessageTimestamp) - parseDoobotTimestamp(a.LastMessageTimestamp);
     });
 
     // For "No leídos" filter conversations with unread messages (API or local)
