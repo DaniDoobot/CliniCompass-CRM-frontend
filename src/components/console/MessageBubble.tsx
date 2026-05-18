@@ -63,7 +63,9 @@ export function MessageBubble({ message }: Props) {
         <div className="console-msg-time">
           {formatTime(message.time)}
           {message.fromUser && message.status && (
-            <span style={{ marginLeft: 4 }}>{statusIcon(message.status)}</span>
+            <span style={{ marginLeft: 4, display: "inline-flex", alignItems: "center" }}>
+              <StatusIcon status={message.status} />
+            </span>
           )}
         </div>
       </div>
@@ -78,17 +80,51 @@ function formatTime(raw: string): string {
   return match ? match[1] : raw;
 }
 
-function statusIcon(status: string): string {
+/** SVG double-check icon used for delivered/read */
+function DoubleCheck({ blue }: { blue?: boolean }) {
+  const color = blue ? "#4fc3f7" : "currentColor";
+  return (
+    <svg width="16" height="10" viewBox="0 0 16 10" fill="none" style={{ display: "inline", verticalAlign: "middle" }}>
+      {/* first check */}
+      <polyline points="1,5 4,8 9,2" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      {/* second check shifted right */}
+      <polyline points="5,5 8,8 13,2" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
+
+function SingleCheck() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ display: "inline", verticalAlign: "middle" }}>
+      <polyline points="1,5 4,8 9,2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
+
+function StatusIcon({ status }: { status: string }) {
   switch (status?.toLowerCase()) {
     case "sent":
-      return "✓";
+      return <SingleCheck />;
     case "delivered":
-      return "✓✓";
+      return <DoubleCheck />;
     case "read":
-      return "✓✓"; // would be blue in a real impl
+      return <DoubleCheck blue />;
     case "failed":
-      return "⚠️";
+      return (
+        <span style={{
+          fontSize: 10,
+          color: "#ef4444",
+          fontWeight: 600,
+          background: "rgba(239,68,68,0.1)",
+          borderRadius: 4,
+          padding: "1px 4px",
+          marginLeft: 2,
+          letterSpacing: 0.2,
+        }}>
+          Envío fallido
+        </span>
+      );
     default:
-      return "";
+      return null;
   }
 }

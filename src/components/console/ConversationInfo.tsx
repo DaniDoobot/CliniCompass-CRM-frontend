@@ -4,8 +4,6 @@ import { useDoobotConversationActions, useDoobotManagers } from "@/hooks/useDoob
 import {
   StatusCatalog,
   BotCatalog,
-  ContactCatalog,
-  TimeZoneCatalog,
   CampaignCatalog,
 } from "@/lib/doobotConfig";
 import { X, UserCheck, Check, Loader2 } from "lucide-react";
@@ -18,7 +16,7 @@ interface Props {
 
 export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
   const { data: managers } = useDoobotManagers();
-  const { assignManager, setCampaign, setBot, setTimeZone, setContact, setAlias } =
+  const { assignManager, setCampaign, setBot, setAlias } =
     useDoobotConversationActions(chat.ConversationID);
 
   const [aliasValue, setAliasValue] = useState(chat.ClientAlias ?? "");
@@ -26,15 +24,11 @@ export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
 
   const [localCampaign, setLocalCampaign] = useState(chat.Campaign ?? "");
   const [localBot, setLocalBot] = useState(chat.BotProjectID ?? "");
-  const [localTimeZone, setLocalTimeZone] = useState(chat.TimeZone ?? "");
-  const [localContact, setLocalContact] = useState(chat.Contact ?? "");
 
   useEffect(() => {
     setLocalCampaign(chat.Campaign ?? "");
     setLocalBot(chat.BotProjectID ?? "");
-    setLocalTimeZone(chat.TimeZone ?? "");
-    setLocalContact(chat.Contact ?? "");
-  }, [chat.ConversationID, chat.Campaign, chat.BotProjectID, chat.TimeZone, chat.Contact]);
+  }, [chat.ConversationID, chat.Campaign, chat.BotProjectID]);
 
   const name = chat.ClientAlias || chat.ClientPhone || "Desconocido";
   const initials = name
@@ -111,6 +105,12 @@ export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
         </div>
       </div>
 
+      {/* Intent (solo lectura) */}
+      <div className="console-info-section">
+        <div className="console-info-label">Intent</div>
+        <div className="console-info-value">{chat.Intent || "—"}</div>
+      </div>
+
       {/* Gestor */}
       <div className="console-info-section">
         <div className="console-info-label">Gestor</div>
@@ -183,67 +183,7 @@ export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
         </select>
       </div>
 
-      {/* Horario */}
-      <div className="console-info-section">
-        <div className="console-info-label">Horario de contacto</div>
-        <select
-          className="console-info-select"
-          value={localTimeZone}
-          onChange={(e) => {
-            const val = e.target.value;
-            setLocalTimeZone(val);
-            setTimeZone.mutate(val, { 
-              onSuccess: () => onUpdate?.({ TimeZone: val }),
-              onError: () => setLocalTimeZone(chat.TimeZone ?? "")
-            });
-          }}
-        >
-          <option value="">Sin definir</option>
-          {TimeZoneCatalog.entries.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.display}
-            </option>
-          ))}
-        </select>
-      </div>
 
-      {/* Contacto */}
-      <div className="console-info-section">
-        <div className="console-info-label">Intento de contacto</div>
-        <select
-          className="console-info-select"
-          value={localContact}
-          onChange={(e) => {
-            const val = e.target.value;
-            setLocalContact(val);
-            setContact.mutate(val, { 
-              onSuccess: () => onUpdate?.({ Contact: val }),
-              onError: () => setLocalContact(chat.Contact ?? "")
-            });
-          }}
-        >
-          <option value="">Sin definir</option>
-          {ContactCatalog.entries.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.display}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Intent (solo lectura) */}
-      <div className="console-info-section">
-        <div className="console-info-label">Intent</div>
-        <div className="console-info-value">{chat.Intent || "—"}</div>
-      </div>
-
-      {/* ConversationID */}
-      <div className="console-info-section">
-        <div className="console-info-label">ID Conversación</div>
-        <div className="console-info-value" style={{ fontSize: 11, fontFamily: "monospace", wordBreak: "break-all" }}>
-          {chat.ConversationID}
-        </div>
-      </div>
     </div>
   );
 }

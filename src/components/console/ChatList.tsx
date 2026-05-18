@@ -50,8 +50,13 @@ export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
   const filtered = useMemo(() => {
     let list = [...chats];
 
-    // Sort by most-recent activity first (like WhatsApp)
-    list.sort((a, b) => chatTimestampMs(b.LastMessageTimestamp) - chatTimestampMs(a.LastMessageTimestamp));
+    // Sort: unread first, then by most-recent activity
+    list.sort((a, b) => {
+      const aUnread = hasUnread(a) ? 1 : 0;
+      const bUnread = hasUnread(b) ? 1 : 0;
+      if (bUnread !== aUnread) return bUnread - aUnread;
+      return chatTimestampMs(b.LastMessageTimestamp) - chatTimestampMs(a.LastMessageTimestamp);
+    });
 
     // For "No leídos" filter conversations with unread messages (API or local)
     if (tab === "no_leidos") {
