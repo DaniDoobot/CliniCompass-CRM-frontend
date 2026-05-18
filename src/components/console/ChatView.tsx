@@ -23,9 +23,12 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length === 0) return;
+    const isFirstLoad = prevMsgCount.current === -1;
     const isNew = messages.length !== prevMsgCount.current;
     prevMsgCount.current = messages.length;
-    if (isNew) {
+    
+    // Only scroll if it's new messages AND it's NOT the first load
+    if (isNew && !isFirstLoad) {
       requestAnimationFrame(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       });
@@ -34,7 +37,7 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
 
   // Focus input when chat changes but do NOT auto-scroll
   useEffect(() => {
-    prevMsgCount.current = 0;
+    prevMsgCount.current = -1; // -1 indicates initial load for this chat
     inputRef.current?.focus();
   }, [chat?.ConversationID]);
 
