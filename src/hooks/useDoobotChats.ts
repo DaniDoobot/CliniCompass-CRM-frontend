@@ -3,7 +3,7 @@
  * Polling cada 5 s con detección LOCAL de mensajes nuevos
  * comparando LastMessageID entre polls.
  */
-import { useState as useReactState, useEffect, useRef, useCallback } from "react";
+import { useState as useReactState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAllChats,
@@ -135,7 +135,8 @@ export function useNewActivity(): ReadonlySet<string> {
     return () => { listeners.delete(listener); };
   }, []);
 
-  return globalNewActivity;
+  // Return a new Set instance ONLY when tick changes so React hooks (like useMemo) detect the change correctly
+  return useMemo(() => new Set(globalNewActivity), [tick]);
 }
 
 export function useDoobotChats(showArchived: boolean = false, enabled: boolean = true) {
