@@ -32,13 +32,10 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
     }
   }, [messages]);
 
-  // Focus input and scroll to bottom when chat changes
+  // Focus input when chat changes but do NOT auto-scroll
   useEffect(() => {
     prevMsgCount.current = 0;
     inputRef.current?.focus();
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-    });
   }, [chat?.ConversationID]);
 
   const handleSend = () => {

@@ -63,7 +63,7 @@ function showDesktopNotification(names: string[]) {
     : `Nuevos mensajes de ${names.join(", ")}`;
   const n = new Notification("CRM — Mensaje nuevo", {
     body,
-    icon: "/favicon.svg",
+    icon: "/favicon.png",
     tag: "doobot-new-msg", // reuse same notification
   });
   setTimeout(() => n.close(), 5_000);
