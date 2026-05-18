@@ -203,6 +203,7 @@ async function actionChange(p: Record<string, unknown>, cfg: ChannelConfig, cook
     hide: `/whatsapp/hide/${id}`,
     visible: `/whatsapp/visible/${id}`,
     read: `/whatsapp/read/${id}`,
+    unread: `/whatsapp/unread/${id}`,
     campaign: `/whatsapp/change-campaign/${id}/${encodeURIComponent(String(value ?? ""))}`,
     manager: `/whatsapp/change-manager/${id}/`,
     bot: `/whatsapp/change-bot/${id}/${encodeURIComponent(String(value ?? ""))}`,

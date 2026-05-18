@@ -88,7 +88,13 @@ export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
 
   const handleSelect = (chat: ChatItem) => {
     // Clear local new-activity flag when user opens this conversation
-    if (chat.ConversationID) clearNewActivity(chat.ConversationID);
+    if (chat.ConversationID) {
+      clearNewActivity(chat.ConversationID);
+      // Automatically mark as read in the backend if we open it
+      if (hasUnread(chat)) {
+        markRead.mutate(chat.ConversationID);
+      }
+    }
     onSelect(chat);
   };
 
