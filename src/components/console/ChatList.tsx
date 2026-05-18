@@ -40,7 +40,7 @@ export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
   const isArchived = tab === "archivadas";
   const archivedHook = useDoobotChats(true, isArchived);
 
-  const { chats, isLoading, toggleMode, setStatus, archive, unarchive, markRead } =
+  const { chats, isLoading, toggleMode, setStatus, archive, unarchive, markRead, markUnread } =
     isArchived ? archivedHook : activeHook;
 
   /** Check if a conversation has unread: either API says so OR we locally detected new activity */
@@ -93,7 +93,10 @@ export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
   };
 
   const handleMarkUnread = (chat: ChatItem) => {
-    if (chat.ConversationID) addNewActivity(chat.ConversationID);
+    if (chat.ConversationID) {
+      markUnread.mutate(chat.ConversationID);
+      addNewActivity(chat.ConversationID);
+    }
   };
 
   const emptyMessage = () => {

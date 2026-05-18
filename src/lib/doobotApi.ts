@@ -138,6 +138,7 @@ export const changeStatus = (id: string, status: string) =>
 export const hideConversation = (id: string) => change("hide", id);
 export const showConversation = (id: string) => change("visible", id);
 export const markAsRead = (id: string) => change("read", id);
+export const markAsUnread = (id: string) => change("unread", id);
 
 export const changeCampaign = (id: string, campaign: string) =>
   change("campaign", id, campaign);

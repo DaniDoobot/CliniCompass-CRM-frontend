@@ -12,6 +12,7 @@ import {
   hideConversation,
   showConversation,
   markAsRead as apiMarkAsRead,
+  markAsUnread,
   type ChatItem,
 } from "@/lib/doobotApi";
 
@@ -188,6 +189,11 @@ export function useDoobotChats(showArchived: boolean = false, enabled: boolean =
     onSuccess: invalidate,
   });
 
+  const markUnread = useMutation({
+    mutationFn: (id: string) => markAsUnread(id),
+    onSuccess: invalidate,
+  });
+
   return {
     chats: query.data ?? [],
     isLoading: query.isLoading,
@@ -198,5 +204,6 @@ export function useDoobotChats(showArchived: boolean = false, enabled: boolean =
     archive,
     unarchive,
     markRead,
+    markUnread,
   };
 }
