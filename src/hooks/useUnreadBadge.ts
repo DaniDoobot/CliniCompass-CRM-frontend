@@ -7,7 +7,34 @@ import { useEffect, useRef } from "react";
 const BASE_TITLE = "CRM";
 
 /**
- * Dibuja un badge rojo con número sobre un favicon base.
+ * Draw the nwee "n" icon on a canvas context (blue on transparent).
+ * Mimics the SVG: two thick rounded-cap strokes forming a lowercase "n".
+ */
+function drawNweeN(ctx: CanvasRenderingContext2D, size: number) {
+  const s = size / 512; // scale factor
+
+  ctx.strokeStyle = "#2387EF";
+  ctx.lineWidth = 100 * s;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Left vertical bar
+  ctx.beginPath();
+  ctx.moveTo(150 * s, 425 * s);
+  ctx.lineTo(150 * s, 115 * s);
+  ctx.stroke();
+
+  // Arch + right bar
+  ctx.beginPath();
+  ctx.moveTo(150 * s, 190 * s);
+  ctx.quadraticCurveTo(150 * s, 82 * s, 260 * s, 82 * s);
+  ctx.quadraticCurveTo(370 * s, 82 * s, 370 * s, 190 * s);
+  ctx.lineTo(370 * s, 425 * s);
+  ctx.stroke();
+}
+
+/**
+ * Dibuja un badge rojo con número sobre el favicon de la "n" nwee.
  * Devuelve un data-URL listo para usar como href del <link rel="icon">.
  */
 function drawBadge(count: number): string | null {
@@ -17,21 +44,8 @@ function drawBadge(count: number): string | null {
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  // Fondo del favicon (círculo con gradiente como el primary del CRM)
-  const grad = ctx.createLinearGradient(0, 0, 64, 64);
-  grad.addColorStop(0, "#6366f1");
-  grad.addColorStop(1, "#8b5cf6");
-  ctx.beginPath();
-  ctx.arc(32, 32, 30, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Letra "C" blanca centrada
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 32px sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("C", 32, 34);
+  // Draw the "n" icon
+  drawNweeN(ctx, 64);
 
   if (count > 0) {
     // Badge rojo arriba-derecha

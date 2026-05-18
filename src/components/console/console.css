@@ -358,6 +358,11 @@
   background-repeat: repeat;
 }
 
+.dark .console-messages-area {
+  background-color: hsl(215 28% 12%);
+  background-image: none;
+}
+
 .console-empty-state {
   flex: 1;
   display: flex;
@@ -419,6 +424,17 @@
   background: hsl(225 60% 92%);
   color: hsl(var(--foreground));
   border-bottom-right-radius: 4px;
+}
+
+.dark .console-msg-row.from-client .console-msg-bubble {
+  background: hsl(215 25% 18%);
+  color: hsl(210 15% 90%);
+  border-color: hsl(215 20% 24%);
+}
+
+.dark .console-msg-row.from-panel .console-msg-bubble {
+  background: hsl(211 45% 25%);
+  color: hsl(210 15% 92%);
 }
 
 .console-msg-bubble.document {

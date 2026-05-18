@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- nwee "n" — blue on transparent background -->
+  <path d="M 150 425 V 115" stroke="#2387EF" stroke-width="100" stroke-linecap="round"/>
+  <path d="M 150 190 Q 150 82 260 82 Q 370 82 370 190 V 425" stroke="#2387EF" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
