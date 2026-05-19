@@ -71,6 +71,21 @@ export default function DashboardPage() {
           icon={ArrowUpRight} iconColor="text-success" />
       </div>
 
+      {/* Analytics Report Section */}
+      <div className="stat-card w-full mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold font-heading text-foreground">Analítica y Rendimiento del CRM</h3>
+        </div>
+        <div className="relative w-full overflow-hidden rounded-xl bg-background border border-border" style={{ height: "650px" }}>
+          <iframe 
+            src="https://datastudio.google.com/embed/reporting/b101b282-36b8-4720-ae69-23ade2746611/page/mxcmF" 
+            style={{ border: 0, width: "100%", height: "100%" }}
+            allowFullScreen 
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          />
+        </div>
+      </div>
+
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Today's Appointments */}
