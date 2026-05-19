@@ -448,8 +448,6 @@ export default function SettingsPage() {
     setDeleteStaffTarget(null);
   };
 
-  const isGerencia = hasRole("gerencia") || isSuperAdmin || isCompanyAdmin;
-
   return (
     <AppLayout>
       <PageHeader title="Configuración" description="Ajustes generales del sistema" />
