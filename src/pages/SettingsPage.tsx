@@ -1077,7 +1077,15 @@ export default function SettingsPage() {
                     <Label className="text-xs">Centro</Label>
                     <Select value={userForm.center_id} onValueChange={v => setUserForm({ ...userForm, center_id: v })}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                      <SelectContent>{centers?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {centers
+                          ?.filter((c: any) => !userForm.company_id || c.company_id === userForm.company_id)
+                          ?.map((c: any) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
@@ -1205,7 +1213,15 @@ export default function SettingsPage() {
                     <Label className="text-xs">Centro</Label>
                     <Select value={editProfile.center_id} onValueChange={v => setEditProfile({ ...editProfile, center_id: v })}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Sin centro" /></SelectTrigger>
-                      <SelectContent>{centers?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {centers
+                          ?.filter((c: any) => !editProfile.company_id || c.company_id === editProfile.company_id)
+                          ?.map((c: any) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
