@@ -41,28 +41,56 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Check caller has gerencia role
+    // Check caller roles
     const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
       .eq("user_id", caller.id);
 
-    const isGerencia = callerRoles?.some((r: any) => r.role === "gerencia");
-    if (!isGerencia) {
-      return new Response(JSON.stringify({ error: "Solo gerencia puede crear usuarios" }), {
+    const callerRolesList = callerRoles?.map((r: any) => r.role) || [];
+    const isSuperAdmin = callerRolesList.includes("super_admin");
+    const isCompanyAdmin = callerRolesList.includes("company_admin");
+    const isGerencia = callerRolesList.includes("gerencia");
+
+    if (!isSuperAdmin && !isCompanyAdmin && !isGerencia) {
+      return new Response(JSON.stringify({ error: "Solo gerencia o administradores pueden crear usuarios" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Fetch caller profile for company boundaries
+    const { data: callerProfile } = await adminClient
+      .from("staff_profiles")
+      .select("company_id")
+      .eq("user_id", caller.id)
+      .single();
+    const callerCompanyId = callerProfile?.company_id;
+
     const body = await req.json();
-    const { email, password, first_name, last_name, roles, center_id, specialty } = body;
+    const { email, password, first_name, last_name, roles, center_id, specialty, company_id, permissions } = body;
 
     if (!email || !password || !first_name || !last_name) {
       return new Response(JSON.stringify({ error: "Faltan campos obligatorios" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Validate role permissions
+    if (roles?.includes("super_admin") && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Solo un Gestor Total (super_admin) puede crear otro Gestor Total" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Determine target company_id
+    let targetCompanyId = "00000000-0000-0000-0000-000000000000"; // default CliniCompass
+    if (isSuperAdmin) {
+      targetCompanyId = company_id || callerCompanyId || targetCompanyId;
+    } else {
+      targetCompanyId = callerCompanyId || targetCompanyId;
     }
 
     // Create user via admin API
@@ -80,16 +108,17 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Update staff profile with center and specialty
-    if (center_id || specialty) {
-      await adminClient
-        .from("staff_profiles")
-        .update({
-          ...(center_id ? { center_id } : {}),
-          ...(specialty ? { specialty } : {}),
-        })
-        .eq("user_id", newUser.user!.id);
-    }
+    // Update staff profile with name, company, center and specialty
+    await adminClient
+      .from("staff_profiles")
+      .update({
+        first_name,
+        last_name,
+        company_id: targetCompanyId,
+        ...(center_id ? { center_id } : {}),
+        ...(specialty ? { specialty } : {}),
+      })
+      .eq("user_id", newUser.user!.id);
 
     // Assign roles
     if (roles && roles.length > 0) {
@@ -98,6 +127,17 @@ Deno.serve(async (req: Request) => {
         role,
       }));
       await adminClient.from("user_roles").insert(roleInserts);
+    }
+
+    // Assign granular permissions
+    if (permissions && permissions.length > 0) {
+      const permissionInserts = permissions.map((p: any) => ({
+        user_id: newUser.user!.id,
+        module_name: p.module_name,
+        can_read: !!p.can_read,
+        can_write: !!p.can_write,
+      }));
+      await adminClient.from("user_permissions" as any).insert(permissionInserts);
     }
 
     return new Response(JSON.stringify({ user: newUser.user }), {

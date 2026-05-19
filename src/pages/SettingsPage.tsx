@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Users, Tag, Shield, Receipt, Plus, Loader2, Pencil, MapPin, Trash2, Sparkles } from "lucide-react";
+import { Settings, Users, Tag, Shield, Receipt, Plus, Loader2, Pencil, MapPin, Trash2, Sparkles, Building2 } from "lucide-react";
 import { useInvoiceSeries, useCreateInvoiceSeries } from "@/hooks/useBilling";
 import { useAllServices, useCreateService, useUpdateService, useDeleteService } from "@/hooks/useServicesAdmin";
 import { useCenters } from "@/hooks/useCenters";
@@ -26,33 +26,85 @@ import { useAllSpecialties, useCreateSpecialty, useUpdateSpecialty, useDeleteSpe
 
 const ALL_ROLES = Constants.public.Enums.app_role;
 const ROLE_LABELS: Record<string, string> = {
-  gerencia: "Gerencia",
-  administracion: "Administración",
-  recepcion: "Recepción",
-  comercial: "Comercial",
-  fisioterapeuta: "Fisioterapeuta",
-  nutricionista: "Nutricionista",
-  psicotecnico: "Psicotécnico",
+  super_admin: "Gestor Total (Super)",
+  company_admin: "Gestor de Empresa",
+  staff: "Personal (Normal)",
+  gerencia: "Gerencia (Legacy)",
+  administracion: "Administración (Legacy)",
+  recepcion: "Recepción (Legacy)",
+  comercial: "Comercial (Legacy)",
+  fisioterapeuta: "Fisioterapeuta (Legacy)",
+  nutricionista: "Nutricionista (Legacy)",
+  psicotecnico: "Psicotécnico (Legacy)",
 };
 
 const ROLE_DESCRIPTIONS: Record<string, string> = {
-  gerencia: "Acceso total al sistema: gestión de equipo, configuración, creación de usuarios, eliminación de datos y todas las operaciones.",
-  administracion: "Gestión de centros, series de facturación, servicios, contactos, negocios, agenda y facturación.",
-  recepcion: "Gestión de citas, disponibilidad, contactos y operaciones de recepción del centro.",
-  comercial: "Gestión de leads, negocios, presupuestos, facturas y seguimiento comercial.",
+  super_admin: "Acceso absoluto global a todas las empresas, marcas, configuraciones y usuarios.",
+  company_admin: "Acceso total y configuración de su empresa. Puede crear usuarios 'staff' y gestionar sus permisos granulares.",
+  staff: "Acceso limitado a los módulos explícitamente autorizados por su gestor.",
+  gerencia: "Acceso total al sistema legacy: gestión de equipo, configuración, creación de usuarios, eliminación de datos y todas las operaciones.",
+  administracion: "Gestión legacy de centros, series de facturación, servicios, contactos, negocios, agenda y facturación.",
+  recepcion: "Gestión legacy de citas, disponibilidad, contactos y operaciones de recepción del centro.",
+  comercial: "Gestión legacy de leads, negocios, presupuestos, facturas y seguimiento comercial.",
   fisioterapeuta: "Acceso a agenda propia, citas, contactos asignados y disponibilidad de fisioterapia.",
   nutricionista: "Acceso a agenda propia, citas, contactos asignados y disponibilidad de nutrición.",
   psicotecnico: "Acceso a agenda propia, citas, contactos asignados y disponibilidad de psicotécnicos.",
 };
 
+const PERMISSION_MODULES = [
+  { id: "pacientes", label: "Clientes / Pacientes" },
+  { id: "agenda", label: "Agenda / Citas" },
+  { id: "leads", label: "Leads / Captación" },
+  { id: "consola", label: "Consola Doobot" },
+  { id: "facturacion", label: "Facturación" },
+  { id: "campanas", label: "Campañas" },
+  { id: "centros", label: "Centros" },
+  { id: "contactos", label: "Contactos" },
+];
+
 export default function SettingsPage() {
   const { data: series, isLoading: seriesLoading } = useInvoiceSeries();
   const { data: centers } = useCenters();
-  const { hasRole } = useAuth();
+  const { hasRole, roles: userRoles, profile } = useAuth();
   const queryClient = useQueryClient();
   const createSeries = useCreateInvoiceSeries();
   const [openSeries, setOpenSeries] = useState(false);
   const [seriesForm, setSeriesForm] = useState({ center_id: "", prefix: "", doc_type: "factura" });
+
+  const isSuperAdmin = userRoles.includes("super_admin" as any);
+  const isCompanyAdmin = userRoles.includes("company_admin" as any);
+  const isGerencia = userRoles.includes("gerencia") || isSuperAdmin || isCompanyAdmin;
+
+  // Companies Query (for super admins)
+  const { data: companiesList } = useQuery({
+    queryKey: ["companies"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("companies").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isSuperAdmin,
+  });
+
+  const [openCompanyDialog, setOpenCompanyDialog] = useState(false);
+  const [companyForm, setCompanyForm] = useState({ name: "", logo_url: "", custom_domain: "" });
+
+  const createCompanyMutation = useMutation({
+    mutationFn: async (payload: { name: string; logo_url?: string; custom_domain?: string }) => {
+      const { data, error } = await supabase.from("companies").insert(payload).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Empresa creada correctamente");
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      setOpenCompanyDialog(false);
+      setCompanyForm({ name: "", logo_url: "", custom_domain: "" });
+    },
+    onError: (e: any) => {
+      toast.error("Error al crear empresa: " + e.message);
+    }
+  });
 
   // Services state
   const { data: allServices, isLoading: servicesLoading } = useAllServices();
@@ -164,11 +216,14 @@ export default function SettingsPage() {
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [deleteStaffTarget, setDeleteStaffTarget] = useState<any>(null);
   const [editRoles, setEditRoles] = useState<string[]>([]);
-  const [editProfile, setEditProfile] = useState({ first_name: "", last_name: "", email: "", phone: "", center_id: "", specialty: "" });
+  const [editProfile, setEditProfile] = useState({ first_name: "", last_name: "", email: "", phone: "", center_id: "", specialty: "", company_id: "" });
+  const [editPermissions, setEditPermissions] = useState<any[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
+  
   const [userForm, setUserForm] = useState({
     email: "", password: "", first_name: "", last_name: "",
-    center_id: "", specialty: "", roles: [] as string[],
+    center_id: "", specialty: "", company_id: "", roles: [] as string[],
+    permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false }))
   });
 
   // Delete staff mutation (soft-delete by setting active=false)
@@ -262,7 +317,6 @@ export default function SettingsPage() {
     }
     setCreatingUser(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("create-user", {
         body: {
           email: userForm.email,
@@ -272,13 +326,18 @@ export default function SettingsPage() {
           roles: userForm.roles,
           center_id: userForm.center_id || null,
           specialty: userForm.specialty || null,
+          company_id: userForm.company_id || null,
+          permissions: userForm.roles.includes("staff") ? userForm.permissions : []
         },
       });
       if (res.error) throw new Error(res.error.message || "Error creando usuario");
       if (res.data?.error) throw new Error(res.data.error);
       toast.success(`Usuario ${userForm.email} creado correctamente`);
       setOpenUser(false);
-      setUserForm({ email: "", password: "", first_name: "", last_name: "", center_id: "", specialty: "", roles: [] });
+      setUserForm({
+        email: "", password: "", first_name: "", last_name: "", center_id: "", specialty: "", company_id: "", roles: [],
+        permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false }))
+      });
       queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
     } catch (e: any) {
       toast.error(e.message);
@@ -287,7 +346,7 @@ export default function SettingsPage() {
     }
   };
 
-  const openEditStaff = (staff: any) => {
+  const openEditStaff = async (staff: any) => {
     setEditingStaff(staff);
     setEditRoles(staff.roles || []);
     setEditProfile({
@@ -297,7 +356,27 @@ export default function SettingsPage() {
       phone: staff.phone || "",
       center_id: staff.center_id || "",
       specialty: staff.specialty || "",
+      company_id: staff.company_id || "",
     });
+
+    // Load user permissions from DB
+    const { data } = await supabase
+      .from("user_permissions" as any)
+      .select("module_name, can_read, can_write")
+      .eq("user_id", staff.user_id);
+
+    const permsMap = (data || []).reduce((acc: any, p: any) => {
+      acc[p.module_name] = { can_read: p.can_read, can_write: p.can_write };
+      return acc;
+    }, {});
+
+    setEditPermissions(
+      PERMISSION_MODULES.map(m => ({
+        module_name: m.id,
+        can_read: permsMap[m.id]?.can_read || false,
+        can_write: permsMap[m.id]?.can_write || false,
+      }))
+    );
   };
 
   const handleSaveEdit = async () => {
@@ -313,6 +392,7 @@ export default function SettingsPage() {
           phone: editProfile.phone || null,
           center_id: editProfile.center_id || null,
           specialty: (editProfile.specialty || null) as any,
+          company_id: editProfile.company_id || null,
         })
         .eq("id", editingStaff.id);
       if (profileError) throw profileError;
@@ -337,6 +417,18 @@ export default function SettingsPage() {
         if (error) throw error;
       }
 
+      // Save granular permissions if the user has the 'staff' role
+      await supabase.from("user_permissions" as any).delete().eq("user_id", editingStaff.user_id);
+      if (editRoles.includes("staff") && editPermissions.length > 0) {
+        const permissionInserts = editPermissions.map((p: any) => ({
+          user_id: editingStaff.user_id,
+          module_name: p.module_name,
+          can_read: p.can_read,
+          can_write: p.can_write,
+        }));
+        await supabase.from("user_permissions" as any).insert(permissionInserts);
+      }
+
       toast.success("Usuario actualizado");
       queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
       setEditingStaff(null);
@@ -356,7 +448,7 @@ export default function SettingsPage() {
     setDeleteStaffTarget(null);
   };
 
-  const isGerencia = hasRole("gerencia");
+  const isGerencia = hasRole("gerencia") || isSuperAdmin || isCompanyAdmin;
 
   return (
     <AppLayout>
@@ -365,6 +457,9 @@ export default function SettingsPage() {
       <Tabs defaultValue="general" className="space-y-4">
         <TabsList className="flex-wrap">
           <TabsTrigger value="general" className="gap-1"><Settings className="h-3.5 w-3.5" /> General</TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="companies" className="gap-1"><Building2 className="h-3.5 w-3.5" /> Empresas</TabsTrigger>
+          )}
           <TabsTrigger value="roles" className="gap-1"><Shield className="h-3.5 w-3.5" /> Roles</TabsTrigger>
           <TabsTrigger value="specialties" className="gap-1"><Sparkles className="h-3.5 w-3.5" /> Especialidades</TabsTrigger>
           <TabsTrigger value="services" className="gap-1"><Tag className="h-3.5 w-3.5" /> Servicios</TabsTrigger>
@@ -372,6 +467,73 @@ export default function SettingsPage() {
           <TabsTrigger value="billing" className="gap-1"><Receipt className="h-3.5 w-3.5" /> Series facturación</TabsTrigger>
           <TabsTrigger value="team" className="gap-1"><Users className="h-3.5 w-3.5" /> Equipo</TabsTrigger>
         </TabsList>
+
+        {isSuperAdmin && (
+          <TabsContent value="companies">
+            <div className="stat-card max-w-4xl">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold font-heading text-foreground">Gestión de Empresas (CRM Whitelabel)</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Define las empresas del sistema. Cada empresa tiene su propia marca, centros, agenda, y aislamiento de datos.</p>
+                </div>
+                <Button size="sm" onClick={() => setOpenCompanyDialog(true)}><Building2 className="h-4 w-4 mr-1" />Nueva Empresa</Button>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="font-semibold">Nombre de la Empresa</TableHead>
+                    <TableHead className="font-semibold">Logo (URL)</TableHead>
+                    <TableHead className="font-semibold">Dominio personalizado</TableHead>
+                    <TableHead className="font-semibold">ID Empresa</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!companiesList?.length ? (
+                    <TableRow><TableCell colSpan={4} className="text-center py-4 text-muted-foreground">No hay empresas configuradas</TableCell></TableRow>
+                  ) : companiesList.map((company: any) => (
+                    <TableRow key={company.id}>
+                      <TableCell className="text-sm font-medium flex items-center gap-2">
+                        {company.logo_url && <img src={company.logo_url} alt="" className="h-6 w-6 object-contain rounded" />}
+                        {company.name}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{company.logo_url || "—"}</TableCell>
+                      <TableCell className="text-sm">{company.custom_domain || "—"}</TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">{company.id}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <Dialog open={openCompanyDialog} onOpenChange={setOpenCompanyDialog}>
+              <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>Crear nueva empresa</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nombre de la Empresa *</Label>
+                    <Input className="h-9" value={companyForm.name} onChange={e => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="Ej: Mafre Salud" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">URL del Logo (Opcional)</Label>
+                    <Input className="h-9" value={companyForm.logo_url} onChange={e => setCompanyForm({ ...companyForm, logo_url: e.target.value })} placeholder="https://..." />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Dominio Personalizado (Opcional)</Label>
+                    <Input className="h-9" value={companyForm.custom_domain} onChange={e => setCompanyForm({ ...companyForm, custom_domain: e.target.value })} placeholder="mafre.crm.com" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-2">
+                  <Button variant="outline" onClick={() => setOpenCompanyDialog(false)}>Cancelar</Button>
+                  <Button onClick={() => createCompanyMutation.mutate(companyForm)} disabled={createCompanyMutation.isPending || !companyForm.name}>
+                    {createCompanyMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Crear Empresa
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+        )}
 
         <TabsContent value="general">
           <div className="stat-card max-w-2xl">
@@ -889,7 +1051,7 @@ export default function SettingsPage() {
           </div>
 
           <Dialog open={openUser} onOpenChange={setOpenUser}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Crear nuevo usuario</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -932,10 +1094,23 @@ export default function SettingsPage() {
                     </Select>
                   </div>
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-xs">Empresa *</Label>
+                    <Select value={userForm.company_id} onValueChange={v => setUserForm({ ...userForm, company_id: v })}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar empresa..." /></SelectTrigger>
+                      <SelectContent>
+                        {companiesList?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label className="text-xs">Roles *</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {ALL_ROLES.map((role) => (
+                    {ALL_ROLES.filter(r => r !== "super_admin" || isSuperAdmin).map((role) => (
                       <div key={role} className="flex items-center gap-2">
                         <Checkbox
                           checked={userForm.roles.includes(role)}
@@ -946,8 +1121,54 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+
+                {userForm.roles.includes("staff") && (
+                  <div className="space-y-2 border-t pt-3">
+                    <Label className="text-xs font-semibold">Permisos de Módulos (para Personal Normal)</Label>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-1">
+                      {PERMISSION_MODULES.map((module) => {
+                        const mPerm = userForm.permissions.find(p => p.module_name === module.id) || { can_read: false, can_write: false };
+                        return (
+                          <div key={module.id} className="flex items-center justify-between border-b pb-1">
+                            <span className="text-xs font-medium">{module.label}</span>
+                            <div className="flex gap-4">
+                              <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                                <Checkbox 
+                                  checked={mPerm.can_read} 
+                                  onCheckedChange={(checked) => {
+                                    setUserForm(prev => ({
+                                      ...prev,
+                                      permissions: prev.permissions.map(p => 
+                                        p.module_name === module.id ? { ...p, can_read: !!checked } : p
+                                      )
+                                    }));
+                                  }} 
+                                />
+                                Leer
+                              </label>
+                              <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                                <Checkbox 
+                                  checked={mPerm.can_write} 
+                                  onCheckedChange={(checked) => {
+                                    setUserForm(prev => ({
+                                      ...prev,
+                                      permissions: prev.permissions.map(p => 
+                                        p.module_name === module.id ? { ...p, can_write: !!checked } : p
+                                      )
+                                    }));
+                                  }} 
+                                />
+                                Escribir
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-end gap-2 mt-2">
+              <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setOpenUser(false)}>Cancelar</Button>
                 <Button onClick={handleCreateUser} disabled={creatingUser}>
                   {creatingUser && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
@@ -958,7 +1179,7 @@ export default function SettingsPage() {
           </Dialog>
 
           <Dialog open={!!editingStaff} onOpenChange={(open) => { if (!open) setEditingStaff(null); }}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Editar usuario: {editingStaff?.first_name} {editingStaff?.last_name}</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -1001,10 +1222,23 @@ export default function SettingsPage() {
                     </Select>
                   </div>
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-xs">Empresa</Label>
+                    <Select value={editProfile.company_id} onValueChange={v => setEditProfile({ ...editProfile, company_id: v })}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar empresa..." /></SelectTrigger>
+                      <SelectContent>
+                        {companiesList?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label className="text-xs">Roles</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {ALL_ROLES.map((role) => (
+                    {ALL_ROLES.filter(r => r !== "super_admin" || isSuperAdmin).map((role) => (
                       <div key={role} className="flex items-center gap-2">
                         <Checkbox
                           checked={editRoles.includes(role)}
@@ -1019,8 +1253,48 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+
+                {editRoles.includes("staff") && (
+                  <div className="space-y-2 border-t pt-3">
+                    <Label className="text-xs font-semibold">Permisos de Módulos (para Personal Normal)</Label>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-1">
+                      {PERMISSION_MODULES.map((module) => {
+                        const mPerm = editPermissions.find(p => p.module_name === module.id) || { can_read: false, can_write: false };
+                        return (
+                          <div key={module.id} className="flex items-center justify-between border-b pb-1">
+                            <span className="text-xs font-medium">{module.label}</span>
+                            <div className="flex gap-4">
+                              <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                                <Checkbox 
+                                  checked={mPerm.can_read} 
+                                  onCheckedChange={(checked) => {
+                                    setEditPermissions(prev =>
+                                      prev.map(p => p.module_name === module.id ? { ...p, can_read: !!checked } : p)
+                                    );
+                                  }} 
+                                />
+                                Leer
+                              </label>
+                              <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                                <Checkbox 
+                                  checked={mPerm.can_write} 
+                                  onCheckedChange={(checked) => {
+                                    setEditPermissions(prev =>
+                                      prev.map(p => p.module_name === module.id ? { ...p, can_write: !!checked } : p)
+                                    );
+                                  }} 
+                                />
+                                Escribir
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-end gap-2 mt-2">
+              <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setEditingStaff(null)}>Cancelar</Button>
                 <Button onClick={handleSaveEdit} disabled={savingEdit}>
                   {savingEdit && <Loader2 className="h-4 w-4 animate-spin mr-2" />}

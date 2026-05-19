@@ -58,25 +58,25 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Contactos", url: "/contactos", icon: Contact },
-  { title: "Leads", url: "/leads", icon: UserPlus },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Negocios", url: "/negocios", icon: Briefcase },
-  { title: "Agenda", url: "/agenda", icon: CalendarDays },
-  { title: "Speech Analytics", url: "/speech-analytics", icon: Activity },
-  { title: "Centros", url: "/centros", icon: Building2 },
-  { title: "Consola", url: "/consola", icon: MessageSquare },
+  { title: "Contactos", url: "/contactos", icon: Contact, module: "contactos" },
+  { title: "Leads", url: "/leads", icon: UserPlus, module: "leads" },
+  { title: "Clientes", url: "/clientes", icon: Users, module: "pacientes" },
+  { title: "Negocios", url: "/negocios", icon: Briefcase, module: "negocios" },
+  { title: "Agenda", url: "/agenda", icon: CalendarDays, module: "agenda" },
+  { title: "Speech Analytics", url: "/speech-analytics", icon: Activity, module: "speech_analytics" },
+  { title: "Centros", url: "/centros", icon: Building2, module: "centros" },
+  { title: "Consola", url: "/consola", icon: MessageSquare, module: "consola" },
 ];
 
 const managementNav = [
-  { title: "Campañas", url: "/campanas", icon: Megaphone },
-  { title: "Presupuestos", url: "/presupuestos", icon: FileText },
-  { title: "Facturación", url: "/facturacion", icon: Receipt },
-  { title: "Documentos", url: "/documentos", icon: FileText },
-  { title: "Configuración", url: "/configuracion", icon: Settings },
+  { title: "Campañas", url: "/campanas", icon: Megaphone, module: "campanas" },
+  { title: "Presupuestos", url: "/presupuestos", icon: FileText, module: "facturacion" },
+  { title: "Facturación", url: "/facturacion", icon: Receipt, module: "facturacion" },
+  { title: "Documentos", url: "/documentos", icon: FileText, module: "pacientes" },
+  { title: "Configuración", url: "/configuracion", icon: Settings, module: "configuracion" },
 ];
 
-type NavItem = { title: string; url: string; icon: LucideIcon };
+type NavItem = { title: string; url: string; icon: LucideIcon; module?: string };
 
 function NavGroup({ label, items, defaultOpen = true }: { label: string; items: NavItem[]; defaultOpen?: boolean }) {
   const { state } = useSidebar();
@@ -134,7 +134,7 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const { profile, roles, signOut } = useAuth();
+  const { profile, roles, hasPermission } = useAuth();
   const { data: specialties } = useSpecialties();
 
   const clinicalNav: NavItem[] = (specialties || []).map((s: any) => ({
@@ -143,11 +143,16 @@ export function AppSidebar() {
     icon: ICON_MAP[s.icon_name] || Activity,
   }));
 
-  const initials = profile
-    ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase()
-    : "??";
   const displayName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : "Usuario";
   const displayRole = roles.length > 0 ? roles[0].charAt(0).toUpperCase() + roles[0].slice(1) : "Sin rol";
+
+  const filteredMainNav = mainNav.filter(
+    (item) => !item.module || hasPermission(item.module, "read")
+  );
+  
+  const filteredManagementNav = managementNav.filter(
+    (item) => !item.module || hasPermission(item.module, "read")
+  );
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-white dark:bg-slate-950 transition-all duration-300">
@@ -166,9 +171,11 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-3 pt-0">
-        <NavGroup label="Principal" items={mainNav} />
-        <NavGroup label="Especialidades" items={clinicalNav} />
-        <NavGroup label="Gestión" items={managementNav} />
+        {filteredMainNav.length > 0 && <NavGroup label="Principal" items={filteredMainNav} />}
+        {clinicalNav.length > 0 && hasPermission("pacientes", "read") && (
+          <NavGroup label="Especialidades" items={clinicalNav} />
+        )}
+        {filteredManagementNav.length > 0 && <NavGroup label="Gestión" items={filteredManagementNav} />}
       </SidebarContent>
 
       <SidebarFooter className="p-3 flex flex-col items-center gap-1 border-t border-sidebar-border/30">
