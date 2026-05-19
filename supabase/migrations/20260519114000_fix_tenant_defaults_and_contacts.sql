@@ -36,6 +36,8 @@ DROP POLICY IF EXISTS "Authenticated read contacts" ON public.contacts;
 DROP POLICY IF EXISTS "Staff manage contacts" ON public.contacts;
 DROP POLICY IF EXISTS "Staff update contacts" ON public.contacts;
 DROP POLICY IF EXISTS "Admin delete contacts" ON public.contacts;
+DROP POLICY IF EXISTS "Select contacts" ON public.contacts;
+DROP POLICY IF EXISTS "Manage contacts" ON public.contacts;
 
 CREATE POLICY "Select contacts" ON public.contacts FOR SELECT TO authenticated
   USING (
