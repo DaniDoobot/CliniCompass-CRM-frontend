@@ -9,8 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ── Invoke helper ──────────────────────────────────────────────────────
 async function invoke<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
+  const doobotCookie = localStorage.getItem("doobot_cookie") || "";
   const { data, error } = await supabase.functions.invoke("console-api", {
     body: { action, ...params },
+    headers: {
+      "x-doobot-cookie": doobotCookie,
+    },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);

@@ -20,6 +20,20 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+
+      // Log into Doobot console API using the same credentials
+      try {
+        const { data, error: doobotErr } = await supabase.functions.invoke("console-api", {
+          body: { action: "doobot:login", email, password },
+        });
+        if (doobotErr) throw doobotErr;
+        if (data?.data?.cookie) {
+          localStorage.setItem("doobot_cookie", data.data.cookie);
+        }
+      } catch (doobotLoginErr: any) {
+        console.warn("No se pudo sincronizar la sesión de Doobot:", doobotLoginErr);
+      }
+
       toast.success("Sesión iniciada correctamente");
     } catch (err: any) {
       toast.error(err.message || "Error de autenticación");

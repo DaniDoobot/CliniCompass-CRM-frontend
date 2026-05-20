@@ -28,7 +28,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-doobot-cookie",
 };
 
 // ── Supabase ───────────────────────────────────────────────────────────
@@ -97,6 +97,24 @@ async function getDoobotCookie(cfg: ChannelConfig): Promise<string> {
     .map((c) => c.split(";")[0].trim())
     .filter(Boolean)
     .join("; ");
+}
+
+async function actionDoobotLogin(email: string, pass: string, cfg: ChannelConfig): Promise<{ cookie: string }> {
+  const res = await fetch(`${cfg.doobotBase}/user/login?_format=json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ name: email, pass }),
+  });
+  if (!res.ok) {
+    throw new Error("Credenciales de Doobot incorrectas");
+  }
+  const raw = res.headers.get("set-cookie") ?? "";
+  const cookie = raw
+    .split(",")
+    .map((c) => c.split(";")[0].trim())
+    .filter(Boolean)
+    .join("; ");
+  return { cookie };
 }
 
 function doobotHeaders(cfg: ChannelConfig, cookie: string): HeadersInit {
@@ -274,13 +292,24 @@ serve(async (req: Request) => {
 
     // 4. Obtener sesión Doobot solo para acciones que la necesiten
     let cookie = "";
-    if (action.startsWith("doobot:")) {
-      cookie = await getDoobotCookie(cfg);
+    if (action.startsWith("doobot:") && action !== "doobot:login") {
+      // Intentar obtener la cookie desde la cabecera x-doobot-cookie
+      cookie = req.headers.get("x-doobot-cookie") || "";
+      if (!cookie) {
+        // Fallback a credenciales de entorno globales
+        cookie = await getDoobotCookie(cfg);
+      }
     }
 
     // 5. Dispatch
     let data: unknown;
     switch (action) {
+      case "doobot:login": {
+        const { email, password } = params as { email?: string; password?: string };
+        if (!email || !password) throw new Error("email and password are required");
+        data = await actionDoobotLogin(email, password, cfg);
+        break;
+      }
       case "doobot:chats":
         data = await actionChats(params, cfg, cookie);
         break;
