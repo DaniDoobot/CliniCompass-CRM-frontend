@@ -241,7 +241,7 @@ async function actionMetaSend(p: Record<string, unknown>, cfg: ChannelConfig) {
   const { payload } = p;
   if (!payload) throw new Error("payload required for meta:send");
   const res = await fetch(
-    `https://graph.facebook.com/v24.0/${cfg.metaPhoneId}/messages`,
+    `https://graph.facebook.com/v20.0/${cfg.metaPhoneId}/messages`,
     {
       method: "POST",
       headers: {
@@ -262,12 +262,15 @@ async function actionMetaMedia(p: Record<string, unknown>, cfg: ChannelConfig) {
   const { mediaId } = p as { mediaId?: string };
   if (!mediaId) throw new Error("mediaId required for meta:media");
 
+  console.log(`[meta:media] Requesting mediaId: ${mediaId}. Token length: ${cfg.metaToken?.length || 0}`);
+
   // 1. Obtener la URL del archivo multimedia desde Graph API
-  const metaRes = await fetch(`https://graph.facebook.com/v24.0/${mediaId}`, {
+  const metaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
     headers: { Authorization: `Bearer ${cfg.metaToken}` },
   });
   if (!metaRes.ok) {
     const err = await metaRes.text();
+    console.error(`[meta:media] Meta Graph API returned error status: ${metaRes.status}, body: ${err}`);
     throw new Error(`Meta media metadata fetch failed: ${metaRes.status} — ${err}`);
   }
   const metaJson = await metaRes.json();
@@ -278,7 +281,11 @@ async function actionMetaMedia(p: Record<string, unknown>, cfg: ChannelConfig) {
   const fileRes = await fetch(mediaUrl, {
     headers: { Authorization: `Bearer ${cfg.metaToken}` },
   });
-  if (!fileRes.ok) throw new Error(`Meta media file download failed: ${fileRes.status}`);
+  if (!fileRes.ok) {
+    const err = await fileRes.text();
+    console.error(`[meta:media] Meta media download failed: ${fileRes.status}, body: ${err}`);
+    throw new Error(`Meta media file download failed: ${fileRes.status} — ${err}`);
+  }
 
   const contentType = fileRes.headers.get("content-type") || "application/octet-stream";
   const arrayBuffer = await fileRes.arrayBuffer();
