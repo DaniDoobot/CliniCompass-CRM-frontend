@@ -258,6 +258,42 @@ async function actionMetaSend(p: Record<string, unknown>, cfg: ChannelConfig) {
   return res.json();
 }
 
+async function actionMetaMedia(p: Record<string, unknown>, cfg: ChannelConfig) {
+  const { mediaId } = p as { mediaId?: string };
+  if (!mediaId) throw new Error("mediaId required for meta:media");
+
+  // 1. Obtener la URL del archivo multimedia desde Graph API
+  const metaRes = await fetch(`https://graph.facebook.com/v24.0/${mediaId}`, {
+    headers: { Authorization: `Bearer ${cfg.metaToken}` },
+  });
+  if (!metaRes.ok) {
+    const err = await metaRes.text();
+    throw new Error(`Meta media metadata fetch failed: ${metaRes.status} — ${err}`);
+  }
+  const metaJson = await metaRes.json();
+  const mediaUrl = metaJson.url;
+  if (!mediaUrl) throw new Error("Meta did not return a media URL");
+
+  // 2. Descargar el archivo binario
+  const fileRes = await fetch(mediaUrl, {
+    headers: { Authorization: `Bearer ${cfg.metaToken}` },
+  });
+  if (!fileRes.ok) throw new Error(`Meta media file download failed: ${fileRes.status}`);
+
+  const contentType = fileRes.headers.get("content-type") || "application/octet-stream";
+  const arrayBuffer = await fileRes.arrayBuffer();
+
+  // Convertir a base64 usando la API de Deno/JavaScript estándar
+  const uint8 = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < uint8.byteLength; i++) {
+    binary += String.fromCharCode(uint8[i]);
+  }
+  const base64 = btoa(binary);
+
+  return { contentType, base64 };
+}
+
 // ── Servidor principal ────────────────────────────────────────────────
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -330,6 +366,9 @@ serve(async (req: Request) => {
         break;
       case "meta:send":
         data = await actionMetaSend(params, cfg);
+        break;
+      case "meta:media":
+        data = await actionMetaMedia(params, cfg);
         break;
       default:
         throw new Error(`Unknown action: ${action}`);

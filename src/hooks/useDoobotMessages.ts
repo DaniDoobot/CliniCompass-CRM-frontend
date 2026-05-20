@@ -143,6 +143,12 @@ function extractAudioUrl(msg: MessageItem): string | undefined {
   return json.audio?.link || json.audio?.url || undefined;
 }
 
+function extractAudioId(msg: MessageItem): string | undefined {
+  const json = safeJsonParse(msg.Body ?? "");
+  if (!json || effectiveType(msg, json) !== "audio") return undefined;
+  return json.audio?.id || undefined;
+}
+
 function isDocumentMessage(msg: MessageItem): boolean {
   const json = safeJsonParse(msg.Body ?? "");
   if (!json) return msg.Type?.toLowerCase() === "document";
@@ -167,6 +173,7 @@ function parseMessages(items: MessageItem[]): ParsedMessage[] {
       imageUrl: extractImageUrl(msg),
       videoUrl: extractVideoUrl(msg),
       audioUrl: extractAudioUrl(msg),
+      audioId: extractAudioId(msg),
       status: msg.Status ?? undefined,
       who: msg.Who ?? undefined,
     }));

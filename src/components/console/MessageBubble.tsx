@@ -1,5 +1,84 @@
 import type { ParsedMessage } from "@/hooks/useDoobotMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+function AudioPlayer({ audioUrl, audioId }: { audioUrl?: string; audioId?: string }) {
+  const [src, setSrc] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!audioId || (audioUrl && !audioUrl.includes("lookaside.fbsbx.com"))) {
+      setSrc(audioUrl || "");
+      return;
+    }
+
+    let active = true;
+    setLoading(true);
+    setError(false);
+
+    const loadMedia = async () => {
+      try {
+        const doobotCookie = localStorage.getItem("doobot_cookie") || "";
+        const { data, error: invokeErr } = await supabase.functions.invoke("console-api", {
+          body: { action: "meta:media", mediaId: audioId },
+          headers: {
+            "x-doobot-cookie": doobotCookie,
+          },
+        });
+        if (invokeErr) throw invokeErr;
+        if (data?.error) throw new Error(data.error);
+
+        const { contentType, base64 } = data.data;
+        if (!active) return;
+
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: contentType });
+        const objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } catch (err) {
+        console.error("Error loading Meta media audio:", err);
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadMedia();
+
+    return () => {
+      active = false;
+      if (src && src.startsWith("blob:")) {
+        URL.revokeObjectURL(src);
+      }
+    };
+  }, [audioUrl, audioId]);
+
+  if (loading) {
+    return <div className="text-xs text-muted-foreground animate-pulse py-2">Cargando audio...</div>;
+  }
+
+  if (error) {
+    return <div className="text-xs text-destructive py-2">Error al cargar audio</div>;
+  }
+
+  if (!src) return null;
+
+  return (
+    <audio
+      src={src}
+      controls
+      controlsList="nodownload"
+      preload="metadata"
+      style={{ width: "100%", height: 40, minWidth: 220 }}
+    />
+  );
+}
 
 interface Props {
   message: ParsedMessage;
@@ -48,15 +127,9 @@ export function MessageBubble({ message }: Props) {
         )}
 
         {/* Audio */}
-        {message.audioUrl && (
+        {(message.audioUrl || message.audioId) && (
           <div className="console-msg-audio" style={{ marginBottom: 8 }}>
-            <audio
-              src={message.audioUrl}
-              controls
-              controlsList="nodownload"
-              preload="metadata"
-              style={{ width: "100%", height: 40, minWidth: 220 }}
-            />
+            <AudioPlayer audioUrl={message.audioUrl} audioId={message.audioId} />
           </div>
         )}
 
