@@ -112,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    localStorage.removeItem("doobot_cookie");
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
