@@ -317,7 +317,7 @@ export default function SettingsPage() {
     }
     setCreatingUser(true);
     try {
-      const targetEmail = userForm.email.includes("@") ? userForm.email : `${userForm.email}@crm.doobot.ai`;
+      const targetEmail = userForm.email.includes("@") ? userForm.email : `${userForm.email}@doobot.ai`;
       const res = await supabase.functions.invoke("create-user", {
         body: {
           email: targetEmail,
@@ -353,7 +353,7 @@ export default function SettingsPage() {
     setEditProfile({
       first_name: staff.first_name || "",
       last_name: staff.last_name || "",
-      email: staff.email ? (staff.email.endsWith("@crm.doobot.ai") ? staff.email.split("@")[0] : staff.email) : "",
+      email: staff.email ? (staff.email.endsWith("@doobot.ai") ? staff.email.split("@")[0] : staff.email) : "",
       phone: staff.phone || "",
       center_id: staff.center_id || "",
       specialty: staff.specialty || "",
@@ -384,7 +384,7 @@ export default function SettingsPage() {
     if (!editingStaff) return;
     setSavingEdit(true);
     try {
-      const targetEmail = editProfile.email ? (editProfile.email.includes("@") ? editProfile.email : `${editProfile.email}@crm.doobot.ai`) : null;
+      const targetEmail = editProfile.email ? (editProfile.email.includes("@") ? editProfile.email : `${editProfile.email}@doobot.ai`) : null;
       const { error: profileError } = await supabase
         .from("staff_profiles")
         .update({
@@ -1019,7 +1019,7 @@ export default function SettingsPage() {
                   <TableRow key={s.id}>
                     <TableCell className="text-sm font-medium">{s.first_name} {s.last_name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {s.email ? (s.email.endsWith("@crm.doobot.ai") ? s.email.split("@")[0] : s.email) : "-"}
+                      {s.email ? (s.email.endsWith("@doobot.ai") ? s.email.split("@")[0] : s.email) : "-"}
                     </TableCell>
                     <TableCell className="text-sm">{s.center?.name || "-"}</TableCell>
                     <TableCell>

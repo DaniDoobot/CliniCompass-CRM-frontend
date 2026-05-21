@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const loginEmail = email.includes("@") ? email : `${email}@crm.doobot.ai`;
+      const loginEmail = email.includes("@") ? email : `${email}@doobot.ai`;
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
 
