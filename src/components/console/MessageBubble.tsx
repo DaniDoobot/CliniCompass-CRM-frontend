@@ -87,6 +87,7 @@ interface Props {
 export function MessageBubble({ message }: Props) {
   const { profile } = useAuth();
   const agentName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : "Agente";
+  const [showTranscription, setShowTranscription] = useState(false);
 
   const side = message.fromUser ? "from-panel" : "from-client";
   const whoLabel =
@@ -97,6 +98,8 @@ export function MessageBubble({ message }: Props) {
         : message.who === "PANEL"
           ? `👤 Agente (${agentName})`
           : message.who ?? undefined;
+
+  const isAudio = !!(message.audioUrl || message.audioId);
 
   return (
     <div className={`console-msg-row ${side}`}>
@@ -127,7 +130,7 @@ export function MessageBubble({ message }: Props) {
         )}
 
         {/* Audio */}
-        {(message.audioUrl || message.audioId) && (
+        {isAudio && (
           <div className="console-msg-audio" style={{ marginBottom: 8 }}>
             <AudioPlayer audioUrl={message.audioUrl} audioId={message.audioId} />
           </div>
@@ -135,7 +138,58 @@ export function MessageBubble({ message }: Props) {
 
         {/* Text */}
         {message.text && (
-          <div style={{ whiteSpace: "pre-wrap" }}>{message.text}</div>
+          isAudio ? (
+            <div className="console-msg-transcription" style={{ marginTop: 4 }}>
+              <button
+                onClick={() => setShowTranscription(!showTranscription)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors focus:outline-none"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <svg
+                  className={`w-3 h-3 transition-transform ${showTranscription ? "rotate-90" : ""}`}
+                  style={{
+                    width: 12,
+                    height: 12,
+                    transition: "transform 0.2s ease",
+                    transform: showTranscription ? "rotate(90deg)" : "none",
+                  }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                {showTranscription ? "Ocultar transcripción" : "Ver transcripción"}
+              </button>
+              {showTranscription && (
+                <div
+                  className="mt-2 text-xs italic text-muted-foreground border-l-2 border-blue-400 pl-2 py-0.5"
+                  style={{
+                    marginTop: 8,
+                    fontSize: "0.75rem",
+                    fontStyle: "italic",
+                    color: "var(--muted-foreground, #666)",
+                    borderLeft: "2px solid #3b82f6",
+                    paddingLeft: 8,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {message.text}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ whiteSpace: "pre-wrap" }}>{message.text}</div>
+          )
         )}
 
         {/* Buttons */}
