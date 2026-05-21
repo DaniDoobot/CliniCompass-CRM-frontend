@@ -73,13 +73,13 @@ interface ChannelConfig {
  * @param _userId  UUID del usuario CRM (ignorado en esta fase)
  * @param _channelId  ID del canal seleccionado (ignorado en esta fase)
  */
-async function getChannelConfig(userId: string, _channelId?: string): Promise<ChannelConfig> {
+async function getChannelConfig(supabaseClient: any, userId: string, _channelId?: string): Promise<ChannelConfig> {
   const baseDefault = Deno.env.get("DOOBOT_BASE_URL") ?? "https://demo.doobot.ai";
   let doobotBase = baseDefault;
 
-  if (supabaseAdmin) {
+  if (supabaseClient) {
     try {
-      const { data: staff, error: staffErr } = await supabaseAdmin
+      const { data: staff, error: staffErr } = await supabaseClient
         .from("staff_profiles")
         .select("company_id")
         .eq("user_id", userId)
@@ -88,7 +88,7 @@ async function getChannelConfig(userId: string, _channelId?: string): Promise<Ch
       if (staffErr) {
         console.error("Error fetching staff_profile in getChannelConfig:", staffErr);
       } else if (staff?.company_id) {
-        const { data: company, error: compErr } = await supabaseAdmin
+        const { data: company, error: compErr } = await supabaseClient
           .from("companies")
           .select("name")
           .eq("id", staff.company_id)
@@ -369,7 +369,7 @@ serve(async (req: Request) => {
     // 3. Resolver configuración del canal
     // TODO (multicanal): pasar user.id y channel_id a getChannelConfig
     //   para que resuelva credenciales por usuario/canal desde BD.
-    const cfg = await getChannelConfig(user.id, channel_id);
+    const cfg = await getChannelConfig(supabaseAuth, user.id, channel_id);
 
     // 4. Obtener sesión Doobot solo para acciones que la necesiten
     let cookie = "";
