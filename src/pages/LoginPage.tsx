@@ -19,13 +19,15 @@ export default function LoginPage() {
 
     try {
       const loginEmail = email.includes("@") ? email : `${email}@doobot.ai`;
-      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const { data: authData, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
 
       // Log into Doobot console API using the same credentials (raw username)
       try {
+        const token = authData.session?.access_token;
         const { data, error: doobotErr } = await supabase.functions.invoke("console-api", {
           body: { action: "doobot:login", email, password },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (doobotErr) throw doobotErr;
         if (data?.data?.cookie) {
