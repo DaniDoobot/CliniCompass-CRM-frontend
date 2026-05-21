@@ -317,9 +317,10 @@ export default function SettingsPage() {
     }
     setCreatingUser(true);
     try {
+      const targetEmail = userForm.email.includes("@") ? userForm.email : `${userForm.email}@crm.doobot.ai`;
       const res = await supabase.functions.invoke("create-user", {
         body: {
-          email: userForm.email,
+          email: targetEmail,
           password: userForm.password,
           first_name: userForm.first_name,
           last_name: userForm.last_name,
@@ -352,7 +353,7 @@ export default function SettingsPage() {
     setEditProfile({
       first_name: staff.first_name || "",
       last_name: staff.last_name || "",
-      email: staff.email || "",
+      email: staff.email ? (staff.email.endsWith("@crm.doobot.ai") ? staff.email.split("@")[0] : staff.email) : "",
       phone: staff.phone || "",
       center_id: staff.center_id || "",
       specialty: staff.specialty || "",
@@ -383,12 +384,13 @@ export default function SettingsPage() {
     if (!editingStaff) return;
     setSavingEdit(true);
     try {
+      const targetEmail = editProfile.email ? (editProfile.email.includes("@") ? editProfile.email : `${editProfile.email}@crm.doobot.ai`) : null;
       const { error: profileError } = await supabase
         .from("staff_profiles")
         .update({
           first_name: editProfile.first_name,
           last_name: editProfile.last_name,
-          email: editProfile.email || null,
+          email: targetEmail,
           phone: editProfile.phone || null,
           center_id: editProfile.center_id || null,
           specialty: (editProfile.specialty || null) as any,
@@ -1016,7 +1018,9 @@ export default function SettingsPage() {
                 ) : staffList.map((s: any) => (
                   <TableRow key={s.id}>
                     <TableCell className="text-sm font-medium">{s.first_name} {s.last_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.email || "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {s.email ? (s.email.endsWith("@crm.doobot.ai") ? s.email.split("@")[0] : s.email) : "-"}
+                    </TableCell>
                     <TableCell className="text-sm">{s.center?.name || "-"}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -1064,8 +1068,8 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Email *</Label>
-                    <Input className="h-9" type="email" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
+                    <Label className="text-xs">Usuario *</Label>
+                    <Input className="h-9" placeholder="Ej: javier" value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Contraseña *</Label>
@@ -1200,8 +1204,8 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Email</Label>
-                    <Input className="h-9" type="email" value={editProfile.email} onChange={e => setEditProfile({ ...editProfile, email: e.target.value })} />
+                    <Label className="text-xs">Usuario *</Label>
+                    <Input className="h-9" placeholder="Ej: javier" value={editProfile.email} onChange={e => setEditProfile({ ...editProfile, email: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Teléfono</Label>

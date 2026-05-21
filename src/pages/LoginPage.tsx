@@ -18,10 +18,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const loginEmail = email.includes("@") ? email : `${email}@crm.doobot.ai`;
+      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
 
-      // Log into Doobot console API using the same credentials
+      // Log into Doobot console API using the same credentials (raw username)
       try {
         const { data, error: doobotErr } = await supabase.functions.invoke("console-api", {
           body: { action: "doobot:login", email, password },
@@ -56,14 +57,14 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">Usuario</Label>
               <Input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-9"
-                placeholder="tu@email.com"
+                placeholder="tu_usuario"
               />
             </div>
             <div className="space-y-1.5">
