@@ -144,13 +144,16 @@ async function getDoobotCookie(cfg: ChannelConfig): Promise<string> {
 }
 
 async function actionDoobotLogin(email: string, pass: string, cfg: ChannelConfig): Promise<{ cookie: string }> {
+  console.log(`[console-api] Intentando login en Doobot con doobotBase: ${cfg.doobotBase}, usuario: ${email}`);
   const res = await fetch(`${cfg.doobotBase}/user/login?_format=json`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ name: email, pass }),
   });
   if (!res.ok) {
-    throw new Error("Credenciales de Doobot incorrectas");
+    const errorText = await res.text();
+    console.error(`[console-api] Error login en Doobot. Status: ${res.status}, Body: ${errorText}`);
+    throw new Error(`Credenciales de Doobot incorrectas (Base: ${cfg.doobotBase}, Usuario: ${email})`);
   }
   const raw = res.headers.get("set-cookie") ?? "";
   const cookie = raw
