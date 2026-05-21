@@ -34,6 +34,10 @@ const corsHeaders = {
 // ── Supabase ───────────────────────────────────────────────────────────
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 
 // ── Tipo de configuración de canal ────────────────────────────────────
 // TODO (multicanal): este tipo debe coincidir con la tabla `channel_configs`.
@@ -69,10 +73,44 @@ interface ChannelConfig {
  * @param _userId  UUID del usuario CRM (ignorado en esta fase)
  * @param _channelId  ID del canal seleccionado (ignorado en esta fase)
  */
-function getChannelConfig(_userId: string, _channelId?: string): ChannelConfig {
-  // TODO: reemplazar con resolución dinámica desde BD (ver comentario arriba)
+async function getChannelConfig(userId: string, _channelId?: string): Promise<ChannelConfig> {
+  const baseDefault = Deno.env.get("DOOBOT_BASE_URL") ?? "https://demo.doobot.ai";
+  let doobotBase = baseDefault;
+
+  if (supabaseAdmin) {
+    try {
+      const { data: staff, error: staffErr } = await supabaseAdmin
+        .from("staff_profiles")
+        .select("company_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (staffErr) {
+        console.error("Error fetching staff_profile in getChannelConfig:", staffErr);
+      } else if (staff?.company_id) {
+        const { data: company, error: compErr } = await supabaseAdmin
+          .from("companies")
+          .select("name")
+          .eq("id", staff.company_id)
+          .maybeSingle();
+
+        if (compErr) {
+          console.error("Error fetching company in getChannelConfig:", compErr);
+        } else if (company?.name) {
+          const companyName = company.name;
+          if (companyName.toLowerCase().includes("boston")) {
+            doobotBase = "https://boston.doobot.ai";
+            console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to: ${doobotBase}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error resolving company in getChannelConfig:", err);
+    }
+  }
+
   return {
-    doobotBase:      Deno.env.get("DOOBOT_BASE_URL") ?? "https://demo.doobot.ai",
+    doobotBase,
     doobotUser:      Deno.env.get("DOOBOT_USER") ?? "",
     doobotPass:      Deno.env.get("DOOBOT_PASS") ?? "",
     doobotConsoleId: Deno.env.get("DOOBOT_CONSOLE_ID") ?? "",
@@ -331,7 +369,7 @@ serve(async (req: Request) => {
     // 3. Resolver configuración del canal
     // TODO (multicanal): pasar user.id y channel_id a getChannelConfig
     //   para que resuelva credenciales por usuario/canal desde BD.
-    const cfg = getChannelConfig(user.id, channel_id);
+    const cfg = await getChannelConfig(user.id, channel_id);
 
     // 4. Obtener sesión Doobot solo para acciones que la necesiten
     let cookie = "";
