@@ -75,7 +75,7 @@ function AudioPlayer({ audioUrl, audioId }: { audioUrl?: string; audioId?: strin
       controls
       controlsList="nodownload"
       preload="metadata"
-      style={{ width: "100%", height: 40, minWidth: 220 }}
+      style={{ width: "100%", height: 40, minWidth: 320 }}
     />
   );
 }
