@@ -76,6 +76,9 @@ interface ChannelConfig {
 async function getChannelConfig(supabaseClient: any, userId: string, _channelId?: string): Promise<ChannelConfig> {
   const baseDefault = Deno.env.get("DOOBOT_BASE_URL") ?? "https://demo.doobot.ai";
   let doobotBase = baseDefault;
+  let doobotConsoleId = Deno.env.get("DOOBOT_CONSOLE_ID") ?? "";
+  let metaPhoneId = Deno.env.get("META_PHONE_ID") ?? "";
+  let metaToken = Deno.env.get("META_TOKEN") ?? "";
 
   if (supabaseClient) {
     try {
@@ -100,7 +103,10 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
           const companyName = company.name;
           if (companyName.toLowerCase().includes("boston")) {
             doobotBase = "https://boston.doobot.ai";
-            console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to: ${doobotBase}`);
+            doobotConsoleId = "321568811036009";
+            metaPhoneId = "321568811036009";
+            metaToken = "EAAHZCWCjz1FwBPvwsX2wtcBAM7q5aDUSpEOgbTtRy6yDnrkFPJAyzvwcWlMwlGuyG1loDnl0u9sHEYinZArCnF1qLUlnC1c63CVa6kBJvdRjwZCWHWpIKZAk8X9LZAPJgJowctT4TatIgbOkPjCnosFlruvytQh3u5JG2K1xPoMQFWdFpiRZAXsZBdjOx7DkwZDZD";
+            console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to: ${doobotBase} with Console ID: ${doobotConsoleId}`);
           }
         }
       }
@@ -113,9 +119,9 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
     doobotBase,
     doobotUser:      Deno.env.get("DOOBOT_USER") ?? "",
     doobotPass:      Deno.env.get("DOOBOT_PASS") ?? "",
-    doobotConsoleId: Deno.env.get("DOOBOT_CONSOLE_ID") ?? "",
-    metaPhoneId:     Deno.env.get("META_PHONE_ID") ?? "",
-    metaToken:       Deno.env.get("META_TOKEN") ?? "",
+    doobotConsoleId,
+    metaPhoneId,
+    metaToken,
   };
 }
 
