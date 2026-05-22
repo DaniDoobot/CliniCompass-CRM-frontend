@@ -95,34 +95,41 @@ function NavGroup({ label, items, defaultOpen = true }: { label: string; items: 
         <CollapsibleContent>
           <SidebarGroupContent>
             <SidebarMenu className={cn(collapsed ? "items-center" : "")}>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === item.url} 
-                    tooltip={item.title}
-                  >
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/"} 
-                      className={cn(
-                        "flex items-center w-full h-full transition-all duration-200",
-                        collapsed ? "justify-center" : "gap-3 px-3 py-2"
-                      )}
-                      activeClassName={cn(
-                        "bg-blue-50 text-blue-600 font-semibold rounded-lg",
-                        collapsed ? "bg-blue-100" : ""
-                      )}
+              {items.map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive} 
+                      tooltip={item.title}
                     >
-                      <item.icon className={cn(
-                        "h-5 w-5 shrink-0", 
-                        location.pathname === item.url ? "text-blue-600" : "text-sidebar-foreground/70"
-                      )} />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      <NavLink 
+                        to={item.url} 
+                        end={item.url === "/"} 
+                        className={cn(
+                          "relative flex items-center w-full h-full transition-all duration-200 overflow-hidden",
+                          collapsed ? "justify-center" : "gap-3 px-3 py-2",
+                          isActive && !collapsed ? "pl-5" : ""
+                        )}
+                        activeClassName={cn(
+                          "!bg-blue-50/90 dark:!bg-blue-950/30 !text-slate-900 dark:!text-slate-100 font-semibold rounded-xl",
+                          collapsed ? "!bg-blue-100/90" : ""
+                        )}
+                      >
+                        {isActive && !collapsed && (
+                          <span className="absolute left-0 top-0 bottom-0 w-[4px] bg-blue-600 rounded-l-xl" />
+                        )}
+                        <item.icon className={cn(
+                          "h-5 w-5 shrink-0 transition-colors", 
+                          isActive ? "text-blue-600 dark:text-blue-400" : "text-sidebar-foreground/70"
+                        )} />
+                        {!collapsed && <span className="truncate">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </CollapsibleContent>
