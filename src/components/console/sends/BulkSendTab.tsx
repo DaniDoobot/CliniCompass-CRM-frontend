@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, Send, Loader2, FileSpreadsheet, X, CheckCircle2, AlertCircle } from "lucide-react";
 import * as XLSX from "xlsx";
 import { BotCatalog, TemplateCatalog, getTranslation } from "@/lib/doobotConfig";
-import { sendTemplateMessage } from "@/lib/metaApi";
+import { sendTemplateMessage, formatMetaError } from "@/lib/metaApi";
 import { saveMessage } from "@/lib/doobotApi";
 import { useCreateBatch, useUpdateBatch, useUpdateSendStatus } from "@/hooks/useSends";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,10 +144,11 @@ export function BulkSendTab() {
           await updateSend.mutateAsync({ id: record.id, status: "sent" });
           sent++;
         } catch (err: any) {
+          const readableError = formatMetaError(err.message);
           await updateSend.mutateAsync({
             id: record.id,
             status: "failed",
-            error_message: err.message,
+            error_message: readableError,
           });
           failed++;
         }

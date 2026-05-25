@@ -88,6 +88,16 @@ export const BotCatalog = createCatalog([
 ]);
 
 export const TemplateTypeCatalog = createCatalog([
+  { id: "recordatorio_cita_primera_presencial", display: "Recordatorio 1ª Cita Presencial (3 var)" },
+  { id: "recordatorio_cita_vadillo", display: "Recordatorio Vadillo (3 var)" },
+  { id: "recordatorio_cita_trafalgar", display: "Recordatorio Trafalgar (3 var)" },
+  { id: "recordatorio_cita_lopezdehoyos", display: "Recordatorio López de Hoyos (3 var)" },
+  { id: "recordatorio_cita_delicias", display: "Recordatorio Delicias (3 var)" },
+  { id: "recordatorio_cita_vallecas", display: "Recordatorio Vallecas (3 var)" },
+  { id: "recordatorio_cita_alcorcon", display: "Recordatorio Alcorcón (3 var)" },
+  { id: "recordatorio_cita_sanse", display: "Recordatorio Sanse (3 var)" },
+  { id: "recordatorio_cita_getafe", display: "Recordatorio Getafe (3 var)" },
+  { id: "recordatorio_cita_talavera", display: "Recordatorio Talavera (3 var)" },
   { id: "recodatorio_previo", display: "Recordatorio día antes (3 var)" },
   { id: "recordatorio", display: "Cita pendiente (1 var)" },
   { id: "reabrir", display: "Reabrir conversación (1 var)" },
@@ -121,6 +131,127 @@ export function getTranslation(tpl: TemplateDefinition, code: string): TemplateT
 }
 
 export const TemplateCatalog: TemplateDefinition[] = [
+  {
+    displayName: "Recordatorio 1ª Cita Presencial (3 var)",
+    name: "recordatorio_cita_primera_presencial",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText:
+          "Hola {{1}}, recuerda que *HOY* a las ⏰ *{{2}}* te espera el doctor para tu *consulta,* en esta dirección:\n\n📍*{{3}}*\n\nEs importante la *punctualidad* para poder *ser atendido* por el doctor.",
+        exampleValues: ["Carlos", "11:00", "Paseo de la Castellana 101. Local 1. 28046, Madrid"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Vadillo (3 var)",
+    name: "recordatorio_cita_vadillo",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Vadillo", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Trafalgar (3 var)",
+    name: "recordatorio_cita_trafalgar",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Trafalgar", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio López de Hoyos (3 var)",
+    name: "recordatorio_cita_lopezdehoyos",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica López de Hoyos", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Delicias (3 var)",
+    name: "recordatorio_cita_delicias",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Delicias", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Vallecas (3 var)",
+    name: "recordatorio_cita_vallecas",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Vallecas", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Alcorcón (3 var)",
+    name: "recordatorio_cita_alcorcon",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Alcorcón", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Sanse (3 var)",
+    name: "recordatorio_cita_sanse",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Sanse", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Getafe (3 var)",
+    name: "recordatorio_cita_getafe",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Getafe", "11:00"],
+        buttons: [],
+      },
+    },
+  },
+  {
+    displayName: "Recordatorio Talavera (3 var)",
+    name: "recordatorio_cita_talavera",
+    variableCount: 3,
+    translations: {
+      es: {
+        bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
+        exampleValues: ["Juan", "Clínica Talavera", "11:00"],
+        buttons: [],
+      },
+    },
+  },
   {
     displayName: "Recordatorio día antes (3 var)",
     name: "recodatorio_previo",

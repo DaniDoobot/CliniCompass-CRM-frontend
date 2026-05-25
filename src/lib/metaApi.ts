@@ -167,3 +167,24 @@ export function buildSaveBody(to: string, type: string, content: object): string
     ...content,
   });
 }
+
+/** Formatea los mensajes de error devueltos por Meta Graph API para mostrarlos legibles en la consola. */
+export function formatMetaError(errorMsg: string): string {
+  if (errorMsg.includes("Meta send failed:")) {
+    try {
+      const jsonStart = errorMsg.indexOf("{");
+      if (jsonStart !== -1) {
+        const jsonStr = errorMsg.slice(jsonStart);
+        const parsed = JSON.parse(jsonStr);
+        const metaError = parsed?.error;
+        if (metaError) {
+          const detail = metaError.error_data?.details || metaError.message;
+          return `Error Meta API [${metaError.code || "Error"}]: ${detail}`;
+        }
+      }
+    } catch {
+      // Ignorar error de parseo y retornar el original
+    }
+  }
+  return errorMsg;
+}

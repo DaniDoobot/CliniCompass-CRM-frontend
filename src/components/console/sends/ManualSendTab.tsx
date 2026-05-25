@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { BotCatalog, TemplateCatalog, getTranslation } from "@/lib/doobotConfig";
-import { sendTemplateMessage, sendTextMessage, buildSaveBody } from "@/lib/metaApi";
+import { sendTemplateMessage, sendTextMessage, buildSaveBody, formatMetaError } from "@/lib/metaApi";
 import { saveMessage } from "@/lib/doobotApi";
 import { useCreateManualSend, useUpdateSendStatus } from "@/hooks/useSends";
 import { toast } from "sonner";
@@ -109,13 +109,14 @@ export function ManualSendTab() {
         setClientName("");
         setTplVars(selectedTemplate ? getTranslation(selectedTemplate, language).exampleValues.map(() => "") : []);
       } catch (sendErr: any) {
+        const readableError = formatMetaError(sendErr.message);
         await updateStatus.mutateAsync({
           id: record.id,
           status: "failed",
-          error_message: sendErr.message,
+          error_message: readableError,
         });
-        setResult({ ok: false, msg: sendErr.message });
-        toast.error("Error al enviar: " + sendErr.message);
+        setResult({ ok: false, msg: readableError });
+        toast.error("Error al enviar: " + readableError);
       }
     } catch (err: any) {
       setResult({ ok: false, msg: err.message });
