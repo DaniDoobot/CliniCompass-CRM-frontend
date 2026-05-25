@@ -13,6 +13,15 @@ import {
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const statusMap: Record<string, "success" | "warning" | "info"> = {
   confirmada: "success",
@@ -23,6 +32,54 @@ const statusMap: Record<string, "success" | "warning" | "info"> = {
 export default function DashboardPage() {
   const { data, isLoading } = useDashboardData();
   const [activeTab, setActiveTab] = useState<"summary" | "analytics">("summary");
+  const [selectedLookerId, setSelectedLookerId] = useState<string | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+
+  const { data: allowedLookers, isLoading: lookersLoading } = useQuery({
+    queryKey: ["allowed-lookers"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from("lookers" as any)
+          .select("*")
+          .order("name");
+        if (error) throw error;
+        return data && data.length > 0 ? data : [
+          {
+            id: "b101b282-36b8-4720-ae69-23ade2746611",
+            name: "Llamadas Doobot",
+            url: "https://datastudio.google.com/embed/reporting/b101b282-36b8-4720-ae69-23ade2746611",
+            pages: [
+              { id: "mxcmF", name: "Llamadas Realizadas" },
+              { id: "anotherPage", name: "Desempeño de Agentes" },
+              { id: "thirdPage", name: "Análisis de Sentimiento" }
+            ]
+          }
+        ];
+      } catch (err) {
+        console.warn("Error loading lookers from database, using fallback default:", err);
+        return [
+          {
+            id: "b101b282-36b8-4720-ae69-23ade2746611",
+            name: "Llamadas Doobot",
+            url: "https://datastudio.google.com/embed/reporting/b101b282-36b8-4720-ae69-23ade2746611",
+            pages: [
+              { id: "mxcmF", name: "Llamadas Realizadas" },
+              { id: "anotherPage", name: "Desempeño de Agentes" },
+              { id: "thirdPage", name: "Análisis de Sentimiento" }
+            ]
+          }
+        ];
+      }
+    }
+  });
+
+  const activeLooker = allowedLookers?.find(l => l.id === selectedLookerId) || allowedLookers?.[0];
+  const pages = activeLooker?.pages as { id: string, name: string }[] || [];
+  const activePage = pages.find(p => p.id === selectedPageId) || pages[0];
+  const iframeSrc = activeLooker 
+    ? `${activeLooker.url}${activePage?.id ? `/page/${activePage.id}` : ""}`
+    : "";
 
   if (isLoading || !data) {
     return (
@@ -192,13 +249,80 @@ export default function DashboardPage() {
           </div>
         </>
       ) : (
-        <div className="relative w-full overflow-hidden rounded-xl bg-white border border-border shadow-sm" style={{ height: "calc(100vh - 200px)", minHeight: "600px" }}>
-          <iframe 
-            src="https://datastudio.google.com/embed/reporting/b101b282-36b8-4720-ae69-23ade2746611/page/mxcmF" 
-            style={{ border: 0, width: "100%", height: "100%" }}
-            allowFullScreen 
-            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-          />
+        <div className="space-y-4 h-full flex flex-col">
+          {/* Controls row */}
+          {allowedLookers && allowedLookers.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground font-medium block">Informe</span>
+                  <Select 
+                    value={activeLooker?.id || ""} 
+                    onValueChange={(val) => {
+                      setSelectedLookerId(val);
+                      setSelectedPageId(null);
+                    }}
+                  >
+                    <SelectTrigger className="w-[240px] h-9">
+                      <SelectValue placeholder="Seleccionar informe..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allowedLookers.map((looker) => (
+                        <SelectItem key={looker.id} value={looker.id}>
+                          {looker.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {pages.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground font-medium block">Página / Vista</span>
+                    <Select 
+                      value={activePage?.id || ""} 
+                      onValueChange={(val) => setSelectedPageId(val)}
+                    >
+                      <SelectTrigger className="w-[200px] h-9">
+                        <SelectValue placeholder="Seleccionar página..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pages.map((page) => (
+                          <SelectItem key={page.id} value={page.id}>
+                            {page.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-muted-foreground hidden sm:block">
+                Viendo: <span className="font-semibold text-foreground">{activeLooker?.name || "—"}</span> &gt; <span className="font-semibold text-foreground">{activePage?.name || "—"}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Iframe container */}
+          {lookersLoading ? (
+            <div className="flex items-center justify-center p-12 min-h-[300px]">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : iframeSrc ? (
+            <div className="relative w-full overflow-hidden rounded-xl bg-white border border-border shadow-sm" style={{ height: "calc(100vh - 280px)", minHeight: "600px" }}>
+              <iframe 
+                src={iframeSrc} 
+                style={{ border: 0, width: "100%", height: "calc(100% + 36px)", marginBottom: "-36px" }}
+                allowFullScreen 
+                sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-xl bg-muted/20 min-h-[300px]">
+              <p className="text-sm text-muted-foreground">No tienes acceso a ningún informe de Looker Studio.</p>
+            </div>
+          )}
         </div>
       )}
     </AppLayout>

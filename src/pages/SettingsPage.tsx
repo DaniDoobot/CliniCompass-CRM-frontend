@@ -86,6 +86,16 @@ export default function SettingsPage() {
     enabled: isSuperAdmin,
   });
 
+  // Lookers Query (for all lookers available in Settings user form)
+  const { data: lookersList } = useQuery({
+    queryKey: ["settings-lookers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lookers" as any).select("*").order("name");
+      if (error) throw error;
+      return data as any[];
+    }
+  });
+
   const [openCompanyDialog, setOpenCompanyDialog] = useState(false);
   const [companyForm, setCompanyForm] = useState({ name: "", logo_url: "", custom_domain: "" });
 
@@ -218,12 +228,14 @@ export default function SettingsPage() {
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editProfile, setEditProfile] = useState({ first_name: "", last_name: "", email: "", phone: "", center_id: "", specialty: "", company_id: "" });
   const [editPermissions, setEditPermissions] = useState<any[]>([]);
+  const [editLookers, setEditLookers] = useState<string[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
   
   const [userForm, setUserForm] = useState({
     email: "", password: "", first_name: "", last_name: "",
     center_id: "", specialty: "", company_id: "", roles: [] as string[],
-    permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false }))
+    permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false })),
+    lookers: [] as string[]
   });
 
   // Delete staff mutation (soft-delete by setting active=false)
@@ -333,11 +345,24 @@ export default function SettingsPage() {
       });
       if (res.error) throw new Error(res.error.message || "Error creando usuario");
       if (res.data?.error) throw new Error(res.data.error);
+
+      // Save Looker permissions if any
+      const newUserId = res.data?.user?.id;
+      if (newUserId && userForm.lookers.length > 0) {
+        const lookerInserts = userForm.lookers.map((lookerId: string) => ({
+          user_id: newUserId,
+          looker_id: lookerId
+        }));
+        const { error: lookerErr } = await supabase.from("user_looker_permissions" as any).insert(lookerInserts);
+        if (lookerErr) console.error("Error saving looker permissions:", lookerErr);
+      }
+
       toast.success(`Usuario ${userForm.email} creado correctamente`);
       setOpenUser(false);
       setUserForm({
         email: "", password: "", first_name: "", last_name: "", center_id: "", specialty: "", company_id: "", roles: [],
-        permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false }))
+        permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false })),
+        lookers: [] as string[]
       });
       queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
     } catch (e: any) {
@@ -378,6 +403,14 @@ export default function SettingsPage() {
         can_write: permsMap[m.id]?.can_write || false,
       }))
     );
+
+    // Load looker permissions from DB
+    const { data: lookerData } = await supabase
+      .from("user_looker_permissions" as any)
+      .select("looker_id")
+      .eq("user_id", staff.user_id);
+
+    setEditLookers((lookerData || []).map((l: any) => l.looker_id));
   };
 
   const handleSaveEdit = async () => {
@@ -429,6 +462,17 @@ export default function SettingsPage() {
           can_write: p.can_write,
         }));
         await supabase.from("user_permissions" as any).insert(permissionInserts);
+      }
+
+      // Save Looker permissions
+      await supabase.from("user_looker_permissions" as any).delete().eq("user_id", editingStaff.user_id);
+      if (editLookers.length > 0) {
+        const lookerInserts = editLookers.map((lookerId: string) => ({
+          user_id: editingStaff.user_id,
+          looker_id: lookerId
+        }));
+        const { error: lookerErr } = await supabase.from("user_looker_permissions" as any).insert(lookerInserts);
+        if (lookerErr) throw lookerErr;
       }
 
       toast.success("Usuario actualizado");
@@ -1177,6 +1221,36 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+
+                <div className="space-y-2 border-t pt-3">
+                  <Label className="text-xs font-semibold">Permisos de Informes Looker</Label>
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    Selecciona a qué informes de Looker Studio tendrá acceso este usuario.
+                  </p>
+                  {!lookersList?.length ? (
+                    <p className="text-xs text-muted-foreground py-1">No hay informes Looker configurados.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {lookersList.map((looker: any) => (
+                        <div key={looker.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`create-looker-${looker.id}`}
+                            checked={userForm.lookers.includes(looker.id)}
+                            onCheckedChange={(checked) => {
+                              setUserForm(prev => ({
+                                ...prev,
+                                lookers: checked 
+                                  ? [...prev.lookers, looker.id]
+                                  : prev.lookers.filter(id => id !== looker.id)
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`create-looker-${looker.id}`} className="text-xs font-normal cursor-pointer truncate">{looker.name}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setOpenUser(false)}>Cancelar</Button>
@@ -1311,6 +1385,35 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+
+                <div className="space-y-2 border-t pt-3">
+                  <Label className="text-xs font-semibold">Permisos de Informes Looker</Label>
+                  <p className="text-[10px] text-muted-foreground mb-1">
+                    Selecciona a qué informes de Looker Studio tendrá acceso este usuario.
+                  </p>
+                  {!lookersList?.length ? (
+                    <p className="text-xs text-muted-foreground py-1">No hay informes Looker configurados.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {lookersList.map((looker: any) => (
+                        <div key={looker.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`edit-looker-${looker.id}`}
+                            checked={editLookers.includes(looker.id)}
+                            onCheckedChange={(checked) => {
+                              setEditLookers(prev => 
+                                checked 
+                                  ? [...prev, looker.id]
+                                  : prev.filter(id => id !== looker.id)
+                              );
+                            }}
+                          />
+                          <Label htmlFor={`edit-looker-${looker.id}`} className="text-xs font-normal cursor-pointer truncate">{looker.name}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" onClick={() => setEditingStaff(null)}>Cancelar</Button>
