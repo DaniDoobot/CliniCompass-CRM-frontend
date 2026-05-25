@@ -5,9 +5,10 @@ import { ChatList } from "@/components/console/ChatList";
 import { ChatView } from "@/components/console/ChatView";
 import { ConversationInfo } from "@/components/console/ConversationInfo";
 import { SendOptionsDialog } from "@/components/console/SendOptionsDialog";
+import { SendsPanel } from "@/components/console/sends/SendsPanel";
 import { useDoobotChats, clearNewActivity, setViewedConversation } from "@/hooks/useDoobotChats";
 import type { ChatItem } from "@/lib/doobotApi";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw, Send } from "lucide-react";
 import "@/components/console/console.css";
 
 function ConsoleContent() {
@@ -15,6 +16,7 @@ function ConsoleContent() {
   const [selectedChat, setSelectedChat] = useState<ChatItem | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showSendOptions, setShowSendOptions] = useState(false);
+  const [showSends, setShowSends] = useState(false);
 
   const { toggleMode } = useDoobotChats(false);
 
@@ -108,6 +110,7 @@ function ConsoleContent() {
             setSelectedChat(chat);
             setViewedConversation(chat.ConversationID);
             setShowInfo(false);
+            setShowSends(false);
           }}
           onModeToggled={(convId, newMode) => {
             // Sync selectedChat if the toggled chat is the currently viewed one
@@ -117,19 +120,27 @@ function ConsoleContent() {
                 : prev
             );
           }}
+          onOpenSends={() => {
+            setShowSends(true);
+            setShowInfo(false);
+          }}
         />
 
-        {/* Center — Chat View */}
-        <ChatView
-          chat={selectedChat}
-          onToggleInfo={() => setShowInfo((v) => !v)}
-          onToggleMode={handleToggleMode}
-          onSwitchToManual={handleSwitchToManual}
-          onOpenSendOptions={() => setShowSendOptions(true)}
-        />
+        {/* Center — Chat View or Sends Panel */}
+        {showSends ? (
+          <SendsPanel onClose={() => setShowSends(false)} />
+        ) : (
+          <ChatView
+            chat={selectedChat}
+            onToggleInfo={() => setShowInfo((v) => !v)}
+            onToggleMode={handleToggleMode}
+            onSwitchToManual={handleSwitchToManual}
+            onOpenSendOptions={() => setShowSendOptions(true)}
+          />
+        )}
 
         {/* Right — Info Panel */}
-        {showInfo && selectedChat && (
+        {showInfo && selectedChat && !showSends && (
           <ConversationInfo
             chat={selectedChat}
             onClose={() => setShowInfo(false)}

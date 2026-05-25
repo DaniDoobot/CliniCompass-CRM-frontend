@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useDoobotChats, useNewActivity, clearNewActivity, addNewActivity } from "@/hooks/useDoobotChats";
 import { useUnreadBadge } from "@/hooks/useUnreadBadge";
 import { ChatListItem } from "./ChatListItem";
-import { Search, Loader2, MessageSquare, CheckCircle } from "lucide-react";
+import { Search, Loader2, MessageSquare, CheckCircle, Send } from "lucide-react";
 import type { ChatItem } from "@/lib/doobotApi";
 
 type Tab = "no_leidos" | "entrantes" | "archivadas";
@@ -11,6 +11,7 @@ interface Props {
   selectedId: string | null;
   onSelect: (chat: ChatItem) => void;
   onModeToggled?: (conversationId: string, newMode: string) => void;
+  onOpenSends?: () => void;
 }
 
 /** Parse a chat timestamp to epoch-ms for sorting. Avoids JS Date confusing dd-mm with mm-dd. */
@@ -27,7 +28,7 @@ export function parseDoobotTimestamp(ts: string | null): number {
   return 0;
 }
 
-export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
+export function ChatList({ selectedId, onSelect, onModeToggled, onOpenSends }: Props) {
   const [tab, setTab] = useState<Tab>("no_leidos");
   const [search, setSearch] = useState("");
 
@@ -116,10 +117,22 @@ export function ChatList({ selectedId, onSelect, onModeToggled }: Props) {
     <div className="console-chat-list">
       {/* Header */}
       <div className="console-chat-list-header">
-        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <MessageSquare size={20} style={{ color: 'hsl(var(--primary))' }} />
-          Consola
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+            <MessageSquare size={20} style={{ color: "hsl(var(--primary))" }} />
+            Consola
+          </h2>
+          {onOpenSends && (
+            <button
+              onClick={onOpenSends}
+              className="console-sends-btn-header"
+              title="Envíos masivos, manuales y programados"
+            >
+              <Send size={13} />
+              <span>Envíos</span>
+            </button>
+          )}
+        </div>
         <div className="console-search">
           <Search size={16} style={{ color: "hsl(var(--muted-foreground))", flexShrink: 0 }} />
           <input

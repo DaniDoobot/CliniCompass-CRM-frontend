@@ -84,22 +84,47 @@ function extractText(msg: MessageItem): string {
       return raw;
     }
     case "template": {
-      const tpl = json.template;
-      if (!tpl) return raw;
-      const langCode = tpl.language?.code ?? "es";
+      const tpl = json.template || json;
+      if (!tpl || !tpl.name) return raw;
+      const langCode = typeof tpl.language === "string" 
+        ? tpl.language 
+        : (tpl.language?.code ?? "es");
       const tplDef = findTemplateByName(tpl.name);
-      for (const comp of (tpl.components ?? [])) {
+      
+      const comps = tpl.components || [];
+      for (const comp of comps) {
         if ((comp.type || "").toUpperCase() === "BODY") {
           let text = comp.text ?? "";
-          if (!text && tplDef) text = getTranslation(tplDef, langCode).bodyText;
+          if (!text && tplDef) {
+            text = getTranslation(tplDef, langCode).bodyText;
+          }
           if (!text) return raw;
-          if (Array.isArray(comp.parameters)) {
-            comp.parameters.forEach((p: any, i: number) => {
+          
+          const params = comp.parameters || [];
+          if (Array.isArray(params)) {
+            params.forEach((p: any, i: number) => {
               text = text.replace(`{{${i + 1}}}`, p.text ?? "");
             });
           }
           return text;
         }
+      }
+      
+      // Fallback: If we couldn't find a BODY component but we have a template definition
+      if (tplDef) {
+        let text = getTranslation(tplDef, langCode).bodyText;
+        // Search body parameters in the payload components to replace placeholders
+        for (const comp of comps) {
+          if ((comp.type || "").toUpperCase() === "BODY") {
+            const params = comp.parameters || [];
+            if (Array.isArray(params)) {
+              params.forEach((p: any, i: number) => {
+                text = text.replace(`{{${i + 1}}}`, p.text ?? "");
+              });
+            }
+          }
+        }
+        return text;
       }
       return raw;
     }
@@ -115,8 +140,9 @@ function extractButtons(msg: MessageItem): { id: string; text: string }[] | unde
     const buttons = json.interactive?.action?.buttons;
     if (Array.isArray(buttons)) return buttons.map((b: any) => ({ id: b.reply?.id ?? "", text: b.reply?.title ?? "" }));
   }
-  if (type === "template" && json.template?.components) {
-    for (const comp of json.template.components) {
+  const tpl = json.template || json;
+  if (type === "template" && tpl?.components) {
+    for (const comp of tpl.components) {
       if ((comp.type || "").toUpperCase() === "BUTTONS" && Array.isArray(comp.buttons)) {
         return comp.buttons.map((b: any) => ({ id: b.type ?? "", text: b.text ?? "" }));
       }
