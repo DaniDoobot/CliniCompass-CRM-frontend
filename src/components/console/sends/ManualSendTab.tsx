@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { BotCatalog, TemplateCatalog, getTranslation } from "@/lib/doobotConfig";
+import { BotCatalog, getTranslation, getTemplatesForCompany } from "@/lib/doobotConfig";
 import { sendTemplateMessage, sendTextMessage, buildSaveBody, formatMetaError } from "@/lib/metaApi";
 import { saveMessage } from "@/lib/doobotApi";
 import { useCreateManualSend, useUpdateSendStatus } from "@/hooks/useSends";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const LANGUAGES = [
@@ -13,6 +14,10 @@ const LANGUAGES = [
 ];
 
 export function ManualSendTab() {
+  const { profile } = useAuth();
+  const companyName = profile?.company?.name || "";
+  const templates = getTemplatesForCompany(companyName);
+
   const [phone, setPhone] = useState("");
   const [clientName, setClientName] = useState("");
   const [botId, setBotId] = useState(BotCatalog.entries[0]?.id || "");
@@ -25,11 +30,11 @@ export function ManualSendTab() {
   const createSend = useCreateManualSend();
   const updateStatus = useUpdateSendStatus();
 
-  const selectedTemplate = TemplateCatalog.find((t) => t.name === templateName) || null;
+  const selectedTemplate = templates.find((t) => t.name === templateName) || null;
 
   const handleTemplateChange = (name: string) => {
     setTemplateName(name);
-    const tpl = TemplateCatalog.find((t) => t.name === name);
+    const tpl = templates.find((t) => t.name === name);
     if (tpl) {
       const trans = getTranslation(tpl, language);
       setTplVars(trans.exampleValues.map(() => ""));
@@ -176,7 +181,7 @@ export function ManualSendTab() {
           <label>Plantilla <span className="sends-optional">(opcional)</span></label>
           <select value={templateName} onChange={(e) => handleTemplateChange(e.target.value)}>
             <option value="">Sin plantilla (mensaje libre)</option>
-            {TemplateCatalog.map((t) => (
+            {templates.map((t) => (
               <option key={t.name} value={t.name}>{t.displayName}</option>
             ))}
           </select>

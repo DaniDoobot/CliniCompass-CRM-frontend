@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useDoobotMessages } from "@/hooks/useDoobotMessages";
 import {
-  TemplateCatalog,
   getTranslation,
+  getTemplatesForCompany,
   type TemplateDefinition,
 } from "@/lib/doobotConfig";
 import type { ChatItem } from "@/lib/doobotApi";
+import { useAuth } from "@/hooks/useAuth";
 import { X, Send, Loader2 } from "lucide-react";
 
 interface Props {
@@ -16,6 +17,10 @@ interface Props {
 type Tab = "image" | "video" | "document" | "buttons" | "template";
 
 export function SendOptionsDialog({ chat, onClose }: Props) {
+  const { profile } = useAuth();
+  const companyName = profile?.company?.name || "";
+  const templates = getTemplatesForCompany(companyName);
+
   const [tab, setTab] = useState<Tab>("image");
   const { sendImage, sendVideo, sendDocument, sendButtons, sendTemplate } = useDoobotMessages(
     chat.ConversationID
@@ -92,7 +97,7 @@ export function SendOptionsDialog({ chat, onClose }: Props) {
   };
 
   const handleTemplateSelect = (name: string) => {
-    const tpl = TemplateCatalog.find((t) => t.name === name);
+    const tpl = templates.find((t) => t.name === name);
     setSelectedTemplate(tpl ?? null);
     if (tpl) {
       const trans = getTranslation(tpl, tplLang);
@@ -271,7 +276,7 @@ export function SendOptionsDialog({ chat, onClose }: Props) {
                   onChange={(e) => handleTemplateSelect(e.target.value)}
                 >
                   <option value="">Seleccionar plantilla...</option>
-                  {TemplateCatalog.map((t) => (
+                  {templates.map((t) => (
                     <option key={t.name} value={t.name}>
                       {t.displayName}
                     </option>

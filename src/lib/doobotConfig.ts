@@ -124,6 +124,7 @@ export interface TemplateDefinition {
   name: string;
   variableCount: number;
   translations: Record<string, TemplateTranslation>;
+  company?: "boston" | "don_psicotecnico" | "all";
 }
 
 export function getTranslation(tpl: TemplateDefinition, code: string): TemplateTranslation {
@@ -135,6 +136,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio 1ª Cita Presencial (3 var)",
     name: "recordatorio_cita_primera_presencial",
     variableCount: 3,
+    company: "boston",
     translations: {
       es: {
         bodyText:
@@ -148,6 +150,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Vadillo (3 var)",
     name: "recordatorio_cita_vadillo",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -160,6 +163,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Trafalgar (3 var)",
     name: "recordatorio_cita_trafalgar",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -172,6 +176,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio López de Hoyos (3 var)",
     name: "recordatorio_cita_lopezdehoyos",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -184,6 +189,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Delicias (3 var)",
     name: "recordatorio_cita_delicias",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -196,6 +202,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Vallecas (3 var)",
     name: "recordatorio_cita_vallecas",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -208,6 +215,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Alcorcón (3 var)",
     name: "recordatorio_cita_alcorcon",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -220,6 +228,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Sanse (3 var)",
     name: "recordatorio_cita_sanse",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -232,6 +241,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Getafe (3 var)",
     name: "recordatorio_cita_getafe",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -244,6 +254,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio Talavera (3 var)",
     name: "recordatorio_cita_talavera",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nTe recordamos que mañana tienes una cita en {{2}} a las {{3}}h.\n\nEn caso de no poder asistir, puedes modificar o cancelar tu cita respondiendo a este mensaje.\n\nGracias.",
@@ -256,6 +267,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Recordatorio día antes (3 var)",
     name: "recodatorio_previo",
     variableCount: 3,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText:
@@ -269,6 +281,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Cita pendiente (1 var)",
     name: "recordatorio",
     variableCount: 1,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText:
@@ -285,6 +298,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Reabrir conversación (1 var)",
     name: "reabrir",
     variableCount: 1,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "Hola {{1}}\n\nUn saludo",
@@ -297,6 +311,7 @@ export const TemplateCatalog: TemplateDefinition[] = [
     displayName: "Conf Edición (1 var)",
     name: "confirmacion_edicion",
     variableCount: 1,
+    company: "don_psicotecnico",
     translations: {
       es: {
         bodyText: "La empresa ha editado el siguiente fichaje\n\n{{1}}\n\n*¿Estás conforme?*",
@@ -316,4 +331,14 @@ export function findTemplateByName(name: string): TemplateDefinition | undefined
 
 export function findTemplateByDisplayName(displayName: string): TemplateDefinition | undefined {
   return TemplateCatalog.find((t) => t.displayName === displayName);
+}
+
+export function getTemplatesForCompany(companyName?: string): TemplateDefinition[] {
+  if (!companyName) return TemplateCatalog;
+  const isBoston = companyName.toLowerCase().includes("boston");
+  if (isBoston) {
+    return TemplateCatalog.filter((t) => t.company === "boston" || t.company === "all");
+  } else {
+    return TemplateCatalog.filter((t) => t.company === "don_psicotecnico" || t.company === "all");
+  }
 }

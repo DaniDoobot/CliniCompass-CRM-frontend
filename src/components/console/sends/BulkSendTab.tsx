@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Upload, Send, Loader2, FileSpreadsheet, X, CheckCircle2, AlertCircle } from "lucide-react";
 import * as XLSX from "xlsx";
-import { BotCatalog, TemplateCatalog, getTranslation } from "@/lib/doobotConfig";
+import { BotCatalog, getTranslation, getTemplatesForCompany } from "@/lib/doobotConfig";
 import { sendTemplateMessage, formatMetaError } from "@/lib/metaApi";
 import { saveMessage } from "@/lib/doobotApi";
 import { useCreateBatch, useUpdateBatch, useUpdateSendStatus } from "@/hooks/useSends";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -20,9 +21,13 @@ interface ParsedRow {
 }
 
 export function BulkSendTab() {
+  const { profile } = useAuth();
+  const companyName = profile?.company?.name || "";
+  const templates = getTemplatesForCompany(companyName);
+
   const [botId, setBotId] = useState(BotCatalog.entries[0]?.id || "");
   const [language, setLanguage] = useState("es");
-  const [templateName, setTemplateName] = useState(TemplateCatalog[0]?.name || "");
+  const [templateName, setTemplateName] = useState("");
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [sending, setSending] = useState(false);
@@ -32,7 +37,14 @@ export function BulkSendTab() {
   const updateBatch = useUpdateBatch();
   const updateSend = useUpdateSendStatus();
 
-  const selectedTemplate = TemplateCatalog.find((t) => t.name === templateName) || null;
+  // Set default template when the filtered list loads
+  useEffect(() => {
+    if (templates.length > 0 && !templateName) {
+      setTemplateName(templates[0].name);
+    }
+  }, [templates, templateName]);
+
+  const selectedTemplate = templates.find((t) => t.name === templateName) || null;
   const varCount = selectedTemplate?.variableCount ?? 0;
 
   const handleFile = useCallback(
@@ -202,7 +214,7 @@ export function BulkSendTab() {
             setTemplateName(e.target.value);
             setRows([]); setFileName(""); // reset file when template changes
           }}>
-            {TemplateCatalog.map((t) => (
+            {templates.map((t) => (
               <option key={t.name} value={t.name}>{t.displayName}</option>
             ))}
           </select>

@@ -1,11 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Upload, Clock, Loader2, FileSpreadsheet, X, Play, Pause,
   Trash2, Edit3, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { BotCatalog, TemplateCatalog } from "@/lib/doobotConfig";
+import { BotCatalog, getTemplatesForCompany } from "@/lib/doobotConfig";
 import { useBatches, useCreateBatch, useUpdateBatch, useDeleteBatch } from "@/hooks/useSends";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const LANGUAGES = [
@@ -20,9 +21,13 @@ interface ParsedRow {
 }
 
 export function ScheduledSendTab() {
+  const { profile } = useAuth();
+  const companyName = profile?.company?.name || "";
+  const templates = getTemplatesForCompany(companyName);
+
   const [botId, setBotId] = useState(BotCatalog.entries[0]?.id || "");
   const [language, setLanguage] = useState("es");
-  const [templateName, setTemplateName] = useState(TemplateCatalog[0]?.name || "");
+  const [templateName, setTemplateName] = useState("");
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [scheduledDate, setScheduledDate] = useState("");
@@ -38,7 +43,14 @@ export function ScheduledSendTab() {
   const updateBatch = useUpdateBatch();
   const deleteBatch = useDeleteBatch();
 
-  const selectedTemplate = TemplateCatalog.find((t) => t.name === templateName) || null;
+  // Set default template when the filtered list loads
+  useEffect(() => {
+    if (templates.length > 0 && !templateName) {
+      setTemplateName(templates[0].name);
+    }
+  }, [templates, templateName]);
+
+  const selectedTemplate = templates.find((t) => t.name === templateName) || null;
   const varCount = selectedTemplate?.variableCount ?? 0;
 
   const scheduledBatches = (batches || []).filter((b) => b.batch_type === "scheduled");
@@ -210,7 +222,7 @@ export function ScheduledSendTab() {
             setTemplateName(e.target.value);
             setRows([]); setFileName("");
           }}>
-            {TemplateCatalog.map((t) => (
+            {templates.map((t) => (
               <option key={t.name} value={t.name}>{t.displayName}</option>
             ))}
           </select>
