@@ -79,6 +79,8 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
   let doobotConsoleId = Deno.env.get("DOOBOT_CONSOLE_ID") ?? "";
   let metaPhoneId = Deno.env.get("META_PHONE_ID") ?? "";
   let metaToken = Deno.env.get("META_TOKEN") ?? "";
+  let doobotUser = Deno.env.get("DOOBOT_USER") ?? "";
+  let doobotPass = Deno.env.get("DOOBOT_PASS") ?? "";
 
   if (supabaseClient) {
     try {
@@ -106,6 +108,8 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
             doobotConsoleId = "321568811036009";
             metaPhoneId = "321568811036009";
             metaToken = "EAAHZCWCjz1FwBPvwsX2wtcBAM7q5aDUSpEOgbTtRy6yDnrkFPJAyzvwcWlMwlGuyG1loDnl0u9sHEYinZArCnF1qLUlnC1c63CVa6kBJvdRjwZCWHWpIKZAk8X9LZAPJgJowctT4TatIgbOkPjCnosFlruvytQh3u5JG2K1xPoMQFWdFpiRZAXsZBdjOx7DkwZDZD";
+            doobotUser = Deno.env.get("DOOBOT_USER_BOSTON") ?? doobotUser;
+            doobotPass = Deno.env.get("DOOBOT_PASS_BOSTON") ?? doobotPass;
             console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to: ${doobotBase} with Console ID: ${doobotConsoleId}`);
           }
         }
@@ -117,8 +121,8 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
 
   return {
     doobotBase,
-    doobotUser:      Deno.env.get("DOOBOT_USER") ?? "",
-    doobotPass:      Deno.env.get("DOOBOT_PASS") ?? "",
+    doobotUser,
+    doobotPass,
     doobotConsoleId,
     metaPhoneId,
     metaToken,
@@ -178,7 +182,11 @@ async function doobotGET(path: string, cfg: ChannelConfig, cookie: string): Prom
     method: "GET",
     headers: doobotHeaders(cfg, cookie),
   });
-  if (!res.ok) throw new Error(`Doobot GET ${path} → ${res.status}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[console-api] Doobot GET ${path} failed with status ${res.status}. Response:`, errorText);
+    throw new Error(`Doobot GET ${path} → ${res.status}: ${errorText.slice(0, 200)}`);
+  }
   return res.json();
 }
 
@@ -188,7 +196,8 @@ async function doobotPOST(
   cfg: ChannelConfig,
   cookie: string
 ): Promise<unknown> {
-  const res = await fetch(`${cfg.doobotBase}${path}`, {
+  const url = `${cfg.doobotBase}${path}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -196,7 +205,11 @@ async function doobotPOST(
     },
     body: body.toString(),
   });
-  if (!res.ok) throw new Error(`Doobot POST ${path} → ${res.status}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[console-api] Doobot POST ${path} failed with status ${res.status}. Response:`, errorText);
+    throw new Error(`Doobot POST ${path} → ${res.status}: ${errorText.slice(0, 200)}`);
+  }
   return res.json();
 }
 
@@ -243,16 +256,74 @@ async function actionMessages(p: Record<string, unknown>, cfg: ChannelConfig, co
 }
 
 async function actionSave(p: Record<string, unknown>, cfg: ChannelConfig, cookie: string) {
-  const body = new URLSearchParams({
-    ConversationID: String(p.conversationId ?? ""),
-    Who: String(p.who ?? "PANEL"),
-    Type: String(p.type ?? "text"),
-    Body: String(p.body ?? ""),
-    ExternalMessageID: String(p.externalMessageId ?? ""),
-    SetAutoMode: String(p.setAutoMode ?? false),
-    ArchivedFromPanel: String(p.archivedFromPanel ?? 0),
-  });
-  return doobotPOST("/whatsapp/save", body, cfg, cookie);
+  let conversationId = String(p.conversationId ?? "");
+  const who = String(p.who ?? "PANEL");
+  const type = String(p.type ?? "text");
+  const bodyText = String(p.body ?? "");
+  const externalMessageId = String(p.externalMessageId ?? "");
+  const setAutoMode = String(p.setAutoMode ?? false);
+  const archivedFromPanel = String(p.archivedFromPanel ?? 0);
+
+  // Check if conversationId is a valid UUID. If not, treat as phone number and resolve/initialize conversation.
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(conversationId);
+
+  let finalConversationId = "";
+  let clientPhone = "";
+
+  if (conversationId && !isUuid) {
+    clientPhone = conversationId.replace(/^\+/, "").trim();
+    try {
+      console.log(`[console-api] Resolving conversation for phone ${clientPhone} and Bot Phone ID ${cfg.metaPhoneId}...`);
+      const res = await doobotGET(`/whatsapp/get-conversation/${cfg.metaPhoneId}/${clientPhone}`, cfg, cookie) as any;
+      if (res && res.status === "OK" && res.conversation?.ConversationID) {
+        finalConversationId = res.conversation.ConversationID;
+        console.log(`[console-api] Found existing conversation ID ${finalConversationId} for phone ${clientPhone}`);
+      } else {
+        console.log(`[console-api] No existing conversation found for phone ${clientPhone}.`);
+      }
+    } catch (err) {
+      console.warn(`[console-api] Failed to get conversation by phone:`, err);
+    }
+  } else {
+    finalConversationId = conversationId;
+  }
+
+  const params: Record<string, string> = {
+    Who: who,
+    Type: type,
+    Body: bodyText,
+    ExternalMessageID: externalMessageId,
+    SetAutoMode: String(setAutoMode),
+    ArchivedFromPanel: String(archivedFromPanel),
+  };
+
+  if (finalConversationId) {
+    params.ConversationID = finalConversationId;
+  } else {
+    // If conversation doesn't exist, we must provide initialization fields
+    if (!clientPhone && bodyText) {
+      try {
+        const bodyJson = JSON.parse(bodyText);
+        clientPhone = String(bodyJson.to || "").replace(/^\+/, "").trim();
+      } catch {
+        // ignore
+      }
+    }
+
+    if (clientPhone) {
+      params.ClientPhoneID = clientPhone;
+      params.ClientPhone = clientPhone;
+      params.ClientAlias = clientPhone;
+      params.BotPhoneID = cfg.metaPhoneId;
+      params.BotPhone = cfg.metaPhoneId;
+      console.log(`[console-api] Initialize parameters for new conversation with client: ${clientPhone}, bot phone id: ${cfg.metaPhoneId}`);
+    } else {
+      console.warn("[console-api] Saving message without conversation ID and without client phone identifier.");
+    }
+  }
+
+  const searchParams = new URLSearchParams(params);
+  return doobotPOST("/whatsapp/save", searchParams, cfg, cookie);
 }
 
 async function actionManagers(cfg: ChannelConfig, cookie: string) {

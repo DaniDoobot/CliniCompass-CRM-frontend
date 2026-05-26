@@ -56,6 +56,9 @@ function safeJsonParse(raw: string): any | null {
 }
 
 function effectiveType(msg: MessageItem, json: any): string {
+  if (json && (json.template || (json.name && json.components))) {
+    return "template";
+  }
   return ((json?.type || msg.Type || "")).toLowerCase();
 }
 
