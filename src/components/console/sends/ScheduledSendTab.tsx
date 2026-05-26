@@ -17,6 +17,7 @@ const LANGUAGES = [
 
 interface ParsedRow {
   phone: string;
+  clientName?: string;
   vars: string[];
 }
 
@@ -75,11 +76,12 @@ export function ScheduledSendTab() {
             if (!row || !row[0]) continue;
             const phone = String(row[0]).replace(/\D/g, "");
             if (!phone) continue;
+            const clientName = String(row[1] ?? "").trim();
             const vars: string[] = [];
-            for (let j = 1; j <= varCount; j++) {
-              vars.push(String(row[j] ?? ""));
+            for (let j = 0; j < varCount; j++) {
+              vars.push(String(row[4 + j] ?? "").trim());
             }
-            parsed.push({ phone, vars });
+            parsed.push({ phone, clientName, vars });
           }
           setRows(parsed);
           toast.success(`${parsed.length} destinatarios cargados`);
@@ -253,7 +255,7 @@ export function ScheduledSendTab() {
           <label>
             Archivo Excel *
             <span className="sends-field-hint" style={{ marginLeft: 8 }}>
-              Columnas: teléfono{varCount > 0 ? `, var1...var${varCount}` : ""}
+              Columnas: Teléfono (A), Nombre (B), Campaña (C), Fecha (D){varCount > 0 ? `, Var1 (E)...Var${varCount}` : ""}
             </span>
           </label>
           {fileName && rows.length > 0 ? (

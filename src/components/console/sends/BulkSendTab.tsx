@@ -17,6 +17,7 @@ const LANGUAGES = [
 
 interface ParsedRow {
   phone: string;
+  clientName?: string;
   vars: string[];
 }
 
@@ -61,18 +62,19 @@ export function BulkSendTab() {
           const ws = wb.Sheets[wb.SheetNames[0]];
           const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-          // Skip header row, parse phone + variables
+          // Skip header row, parse phone + clientName + variables starting at index 4
           const parsed: ParsedRow[] = [];
           for (let i = 1; i < json.length; i++) {
             const row = json[i];
             if (!row || !row[0]) continue;
             const phone = String(row[0]).replace(/\D/g, "");
             if (!phone) continue;
+            const clientName = String(row[1] ?? "").trim();
             const vars: string[] = [];
-            for (let j = 1; j <= varCount; j++) {
-              vars.push(String(row[j] ?? ""));
+            for (let j = 0; j < varCount; j++) {
+              vars.push(String(row[4 + j] ?? "").trim());
             }
-            parsed.push({ phone, vars });
+            parsed.push({ phone, clientName, vars });
           }
           setRows(parsed);
           toast.success(`${parsed.length} destinatarios cargados`);
@@ -225,7 +227,7 @@ export function BulkSendTab() {
           <label>
             Archivo Excel *
             <span className="sends-field-hint" style={{ marginLeft: 8 }}>
-              Columnas: teléfono{varCount > 0 ? `, var1${varCount > 1 ? `...var${varCount}` : ""}` : ""}
+              Columnas: Teléfono (A), Nombre (B), Campaña (C), Fecha (D){varCount > 0 ? `, Var1 (E)...Var${varCount}` : ""}
             </span>
           </label>
           {fileName ? (
@@ -260,6 +262,7 @@ export function BulkSendTab() {
                 <thead>
                   <tr>
                     <th>Teléfono</th>
+                    <th>Nombre</th>
                     {Array.from({ length: varCount }).map((_, i) => (
                       <th key={i}>Var {i + 1}</th>
                     ))}
@@ -268,7 +271,8 @@ export function BulkSendTab() {
                 <tbody>
                   {rows.slice(0, 5).map((r, i) => (
                     <tr key={i}>
-                      <td>{r.phone}</td>
+                      <td>+{r.phone}</td>
+                      <td>{r.clientName || "-"}</td>
                       {r.vars.map((v, j) => (
                         <td key={j}>{v}</td>
                       ))}

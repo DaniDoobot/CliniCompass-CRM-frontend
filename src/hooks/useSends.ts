@@ -135,7 +135,7 @@ export function useCreateBatch() {
       file_name?: string;
       total_count: number;
       scheduled_at?: string;
-      rows: { phone: string; vars: string[] }[];
+      rows: { phone: string; clientName?: string; vars: string[] }[];
     }) => {
       // 1. Create the batch record
       const batch = {
@@ -168,6 +168,7 @@ export function useCreateBatch() {
         send_type: params.batch_type,
         status: "pending",
         phone: row.phone,
+        client_name: row.clientName || null,
         bot_id: params.bot_id,
         language: params.language,
         template_name: params.template_name,
