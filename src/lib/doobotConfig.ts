@@ -334,11 +334,6 @@ export function findTemplateByDisplayName(displayName: string): TemplateDefiniti
 }
 
 export function getTemplatesForCompany(companyName?: string): TemplateDefinition[] {
-  if (!companyName) return TemplateCatalog;
-  const isBoston = companyName.toLowerCase().includes("boston");
-  if (isBoston) {
-    return TemplateCatalog.filter((t) => t.company === "boston" || t.company === "all");
-  } else {
-    return TemplateCatalog.filter((t) => t.company === "don_psicotecnico" || t.company === "all");
-  }
+  // Retornamos todas las plantillas tal como solicitó el usuario para que no se filtre ninguna.
+  return TemplateCatalog;
 }
