@@ -3,6 +3,7 @@ import { useDoobotMessages } from "@/hooks/useDoobotMessages";
 import { MessageBubble } from "./MessageBubble";
 import type { ChatItem } from "@/lib/doobotApi";
 import { Send, Plus, Loader2, Info, MessageSquare } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   chat: ChatItem | null;
@@ -17,6 +18,8 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevMsgCount = useRef(0);
+  const { hasPermission } = useAuth();
+  const canSendTemplates = hasPermission("envios", "read");
 
   const { messages, isLoading, sendText } = useDoobotMessages(chat?.ConversationID ?? null);
 
@@ -127,9 +130,11 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
 
       {/* Input */}
       <div className="console-input-area">
-        <button className="console-attach-btn" onClick={onOpenSendOptions} title="Envío avanzado">
-          <Plus size={20} />
-        </button>
+        {canSendTemplates && (
+          <button className="console-attach-btn" onClick={onOpenSendOptions} title="Envío avanzado">
+            <Plus size={20} />
+          </button>
+        )}
         <input
           ref={inputRef}
           type="text"

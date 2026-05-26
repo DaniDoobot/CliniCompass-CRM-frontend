@@ -4,6 +4,7 @@ import { useUnreadBadge } from "@/hooks/useUnreadBadge";
 import { ChatListItem } from "./ChatListItem";
 import { Search, Loader2, MessageSquare, CheckCircle, Send } from "lucide-react";
 import type { ChatItem } from "@/lib/doobotApi";
+import { useAuth } from "@/hooks/useAuth";
 
 type Tab = "no_leidos" | "entrantes" | "archivadas";
 
@@ -31,6 +32,8 @@ export function parseDoobotTimestamp(ts: string | null): number {
 export function ChatList({ selectedId, onSelect, onModeToggled, onOpenSends }: Props) {
   const [tab, setTab] = useState<Tab>("no_leidos");
   const [search, setSearch] = useState("");
+  const { hasPermission } = useAuth();
+  const canReadSends = hasPermission("envios", "read");
 
   // Local detection of new messages (independent of API's MessagesNoRead)
   const newActivity = useNewActivity();
@@ -122,7 +125,7 @@ export function ChatList({ selectedId, onSelect, onModeToggled, onOpenSends }: P
             <MessageSquare size={20} style={{ color: "hsl(var(--primary))" }} />
             Consola
           </h2>
-          {onOpenSends && (
+          {onOpenSends && canReadSends && (
             <button
               onClick={onOpenSends}
               className="console-sends-btn-header"

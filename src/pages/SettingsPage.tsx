@@ -60,6 +60,7 @@ const PERMISSION_MODULES = [
   { id: "campanas", label: "Campañas" },
   { id: "centros", label: "Centros" },
   { id: "contactos", label: "Contactos" },
+  { id: "envios", label: "Envíos (Masivos/Manuales)" },
 ];
 
 export default function SettingsPage() {
@@ -234,7 +235,11 @@ export default function SettingsPage() {
   const [userForm, setUserForm] = useState({
     email: "", password: "", first_name: "", last_name: "",
     center_id: "", specialty: "", company_id: "", roles: [] as string[],
-    permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false })),
+    permissions: PERMISSION_MODULES.map(m => ({
+      module_name: m.id,
+      can_read: m.id === "envios",
+      can_write: m.id === "envios"
+    })),
     lookers: [] as string[]
   });
 
@@ -361,7 +366,11 @@ export default function SettingsPage() {
       setOpenUser(false);
       setUserForm({
         email: "", password: "", first_name: "", last_name: "", center_id: "", specialty: "", company_id: "", roles: [],
-        permissions: PERMISSION_MODULES.map(m => ({ module_name: m.id, can_read: false, can_write: false })),
+        permissions: PERMISSION_MODULES.map(m => ({
+          module_name: m.id,
+          can_read: m.id === "envios",
+          can_write: m.id === "envios"
+        })),
         lookers: [] as string[]
       });
       queryClient.invalidateQueries({ queryKey: ["staff-with-roles"] });
