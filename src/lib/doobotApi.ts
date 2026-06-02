@@ -9,27 +9,32 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ── Invoke helper ──────────────────────────────────────────────────────
 async function invoke<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token || "";
   const doobotCookie = localStorage.getItem("doobot_cookie") || "";
-  const { data, error } = await supabase.functions.invoke("console-api", {
-    body: { action, ...params },
+  
+  const res = await fetch(import.meta.env.VITE_SUPABASE_URL + "/functions/v1/console-api", {
+    method: "POST",
     headers: {
-      "x-doobot-cookie": doobotCookie,
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+      "x-doobot-cookie": doobotCookie
     },
+    body: JSON.stringify({ action, ...params })
   });
-  if (error) {
-    if (error && typeof error === 'object' && 'context' in error) {
-      let ctx = (error as any).context;
-      if (typeof ctx === 'string') {
-        try { ctx = JSON.parse(ctx); } catch (e) {}
-      }
-      if (ctx && ctx.error) {
-        throw new Error(ctx.error);
-      }
-    }
-    throw error;
+
+  let result;
+  try {
+    result = await res.json();
+  } catch (e) {
+    throw new Error(`Edge function falló al devolver JSON. Status: ${res.status}`);
   }
-  if (data?.error) throw new Error(data.error);
-  return data.data as T;
+
+  if (!res.ok || result.error) {
+    throw new Error(result.error || `Error HTTP ${res.status}`);
+  }
+  
+  return result.data as T;
 }
 
 // ── Tipos ──────────────────────────────────────────────────────────────

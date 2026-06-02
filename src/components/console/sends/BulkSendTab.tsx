@@ -174,6 +174,7 @@ export function BulkSendTab() {
           sent++;
         } catch (err: any) {
           const readableError = formatMetaError(err.message);
+          console.log("Raw error object:", err);
           console.error("Error en fila:", record.phone, readableError);
           await updateSend.mutateAsync({
             id: record.id,

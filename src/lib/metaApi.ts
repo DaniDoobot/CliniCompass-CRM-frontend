@@ -20,23 +20,29 @@ export interface MetaSendResponse {
 
 // ── Envío a través de la EF ────────────────────────────────────────────
 async function sendToMeta(payload: object): Promise<MetaSendResponse> {
-  const { data, error } = await supabase.functions.invoke("console-api", {
-    body: { action: "meta:send", payload },
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token || "";
+  const res = await fetch(import.meta.env.VITE_SUPABASE_URL + "/functions/v1/console-api", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ action: "meta:send", payload })
   });
-  if (error) {
-    if (error && typeof error === 'object' && 'context' in error) {
-      let ctx = (error as any).context;
-      if (typeof ctx === 'string') {
-        try { ctx = JSON.parse(ctx); } catch (e) {}
-      }
-      if (ctx && ctx.error) {
-        throw new Error(ctx.error);
-      }
-    }
-    throw error;
+  
+  let result;
+  try {
+    result = await res.json();
+  } catch (e) {
+    throw new Error(`Edge function falló al devolver JSON. Status: ${res.status}`);
   }
-  if (data?.error) throw new Error(data.error);
-  return data.data as MetaSendResponse;
+
+  if (!res.ok || result.error) {
+    throw new Error(result.error || `Error HTTP ${res.status}`);
+  }
+  
+  return result.data as MetaSendResponse;
 }
 
 // ── Builders ───────────────────────────────────────────────────────────
