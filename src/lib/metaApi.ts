@@ -23,7 +23,18 @@ async function sendToMeta(payload: object): Promise<MetaSendResponse> {
   const { data, error } = await supabase.functions.invoke("console-api", {
     body: { action: "meta:send", payload },
   });
-  if (error) throw error;
+  if (error) {
+    if (error && typeof error === 'object' && 'context' in error) {
+      let ctx = (error as any).context;
+      if (typeof ctx === 'string') {
+        try { ctx = JSON.parse(ctx); } catch (e) {}
+      }
+      if (ctx && ctx.error) {
+        throw new Error(ctx.error);
+      }
+    }
+    throw error;
+  }
   if (data?.error) throw new Error(data.error);
   return data.data as MetaSendResponse;
 }

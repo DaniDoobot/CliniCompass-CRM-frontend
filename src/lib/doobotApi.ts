@@ -16,7 +16,18 @@ async function invoke<T>(action: string, params: Record<string, unknown> = {}): 
       "x-doobot-cookie": doobotCookie,
     },
   });
-  if (error) throw error;
+  if (error) {
+    if (error && typeof error === 'object' && 'context' in error) {
+      let ctx = (error as any).context;
+      if (typeof ctx === 'string') {
+        try { ctx = JSON.parse(ctx); } catch (e) {}
+      }
+      if (ctx && ctx.error) {
+        throw new Error(ctx.error);
+      }
+    }
+    throw error;
+  }
   if (data?.error) throw new Error(data.error);
   return data.data as T;
 }
