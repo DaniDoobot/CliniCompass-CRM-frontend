@@ -49,8 +49,7 @@ export function BulkSendTab() {
   const varCount = selectedTemplate?.variableCount ?? 0;
 
   const handleFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
+    (file: File | undefined) => {
       if (!file) return;
       setFileName(file.name);
 
@@ -58,9 +57,23 @@ export function BulkSendTab() {
       reader.onload = (evt) => {
         try {
           const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-          const wb = XLSX.read(data, { type: "array" });
+          const wb = XLSX.read(data, { type: "array", cellDates: true });
           const ws = wb.Sheets[wb.SheetNames[0]];
           const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+
+          // Helper para parsear números decimales de Excel (ej: 0.5 -> "12:00") o fechas
+          const formatCell = (val: any) => {
+            if (val instanceof Date) {
+              return val.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+            }
+            if (typeof val === "number" && val > 0 && val < 1) {
+              const totalMinutes = Math.round(val * 24 * 60);
+              const h = Math.floor(totalMinutes / 60);
+              const m = totalMinutes % 60;
+              return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+            }
+            return String(val ?? "").trim();
+          };
 
           // Skip header row, parse phone + clientName + variables starting at index 4
           const parsed: ParsedRow[] = [];
@@ -69,10 +82,10 @@ export function BulkSendTab() {
             if (!row || !row[0]) continue;
             const phone = String(row[0]).replace(/\D/g, "");
             if (!phone) continue;
-            const clientName = String(row[1] ?? "").trim();
+            const clientName = formatCell(row[1]);
             const vars: string[] = [];
             for (let j = 0; j < varCount; j++) {
-              vars.push(String(row[4 + j] ?? "").trim());
+              vars.push(formatCell(row[4 + j]));
             }
             parsed.push({ phone, clientName, vars });
           }
@@ -87,6 +100,8 @@ export function BulkSendTab() {
     },
     [varCount]
   );
+
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleClearFile = () => {
     setRows([]);
@@ -282,13 +297,23 @@ export function BulkSendTab() {
               </button>
             </div>
           ) : (
-            <label className="sends-file-upload">
+            <label 
+              className={`sends-file-upload ${isDragging ? "dragging" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFile(file);
+              }}
+            >
               <Upload size={18} />
-              <span>Seleccionar archivo .xlsx</span>
+              <span>{isDragging ? "Suelta el archivo aquí" : "Seleccionar o arrastrar archivo .xlsx"}</span>
               <input
                 type="file"
                 accept=".xlsx,.xls,.csv"
-                onChange={handleFile}
+                onChange={(e) => handleFile(e.target.files?.[0])}
                 style={{ display: "none" }}
               />
             </label>
