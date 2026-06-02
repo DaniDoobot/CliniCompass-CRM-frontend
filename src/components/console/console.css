@@ -1588,3 +1588,122 @@
   color: #2563eb;
 }
 
+/* ── Template Preview Info (Bulk & Scheduled) ── */
+.sends-tpl-info {
+  margin-bottom: 20px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card));
+  overflow: hidden;
+}
+
+.sends-tpl-vars {
+  padding: 14px 16px;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+.sends-tpl-vars > label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 10px;
+}
+
+.sends-tpl-vars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sends-tpl-var-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.sends-tpl-var-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  white-space: nowrap;
+}
+
+.sends-tpl-var-arrow {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.sends-tpl-var-example {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.sends-tpl-var-col {
+  margin-left: auto;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.5);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.sends-tpl-info .sends-preview {
+  padding: 14px 16px;
+  margin-bottom: 0;
+}
+
+.sends-tpl-info .sends-preview > label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 8px;
+}
+
+.sends-tpl-buttons-preview {
+  padding: 14px 16px;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+}
+
+.sends-tpl-buttons-preview > label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 8px;
+}
+
+.sends-tpl-buttons-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sends-tpl-button-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: hsl(var(--muted) / 0.4);
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}

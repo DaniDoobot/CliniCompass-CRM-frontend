@@ -222,6 +222,48 @@ export function BulkSendTab() {
           </select>
         </div>
 
+        {/* Template preview + variable mapping */}
+        {selectedTemplate && (() => {
+          const trans = getTranslation(selectedTemplate, language);
+          let previewText = trans.bodyText;
+          trans.exampleValues.forEach((val, i) => {
+            previewText = previewText.replace(`{{${i + 1}}}`, val || `{{${i + 1}}}`);
+          });
+          return (
+            <div className="sends-tpl-info">
+              <div className="sends-tpl-vars">
+                <label>Variables de la plantilla</label>
+                <div className="sends-tpl-vars-list">
+                  {Array.from({ length: selectedTemplate.variableCount }).map((_, i) => (
+                    <div key={i} className="sends-tpl-var-row">
+                      <span className="sends-tpl-var-tag">{`{{${i + 1}}}`}</span>
+                      <span className="sends-tpl-var-arrow">→</span>
+                      <span className="sends-tpl-var-example">{trans.exampleValues[i] ?? "—"}</span>
+                      <span className="sends-tpl-var-col">Columna Excel: {String.fromCharCode(69 + i)} (col {5 + i})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="sends-preview">
+                <label>Vista previa de la plantilla</label>
+                <div className="sends-preview-box">{previewText}</div>
+              </div>
+              {trans.buttons.length > 0 && (
+                <div className="sends-tpl-buttons-preview">
+                  <label>Botones</label>
+                  <div className="sends-tpl-buttons-list">
+                    {trans.buttons.map((btn, i) => (
+                      <span key={i} className="sends-tpl-button-badge">
+                        {btn.type === "URL" ? "🔗" : "↩️"} {btn.text}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* File upload */}
         <div className="sends-field">
           <label>
