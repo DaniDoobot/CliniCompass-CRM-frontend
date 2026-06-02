@@ -68,7 +68,7 @@ export function ScheduledSendTab() {
           const data = new Uint8Array(evt.target?.result as ArrayBuffer);
           const wb = XLSX.read(data, { type: "array" });
           const ws = wb.Sheets[wb.SheetNames[0]];
-          const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
 
           const parsed: ParsedRow[] = [];
           for (let i = 1; i < json.length; i++) {

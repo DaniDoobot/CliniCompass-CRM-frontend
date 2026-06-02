@@ -60,7 +60,7 @@ export function BulkSendTab() {
           const data = new Uint8Array(evt.target?.result as ArrayBuffer);
           const wb = XLSX.read(data, { type: "array" });
           const ws = wb.Sheets[wb.SheetNames[0]];
-          const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
 
           // Skip header row, parse phone + clientName + variables starting at index 4
           const parsed: ParsedRow[] = [];
