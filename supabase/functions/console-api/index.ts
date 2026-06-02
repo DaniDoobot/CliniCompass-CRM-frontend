@@ -505,7 +505,7 @@ serve(async (req: Request) => {
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    const status = msg === "Unauthorized" ? 401 : 400;
+    const status = msg === "Unauthorized" ? 401 : 200;
     console.error("console-api error:", msg);
     return new Response(JSON.stringify({ error: msg }), {
       status,
