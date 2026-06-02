@@ -18,6 +18,7 @@ async function invoke<T>(action: string, params: Record<string, unknown> = {}): 
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`,
+      "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       "x-doobot-cookie": doobotCookie
     },
     body: JSON.stringify({ action, ...params })
