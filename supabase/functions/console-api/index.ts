@@ -300,27 +300,28 @@ async function actionSave(p: Record<string, unknown>, cfg: ChannelConfig, cookie
 
   if (finalConversationId) {
     params.ConversationID = finalConversationId;
-  } else {
-    // If conversation doesn't exist, we must provide initialization fields
-    if (!clientPhone && bodyText) {
-      try {
-        const bodyJson = JSON.parse(bodyText);
-        clientPhone = String(bodyJson.to || "").replace(/^\+/, "").trim();
-      } catch {
-        // ignore
-      }
-    }
+  }
 
-    if (clientPhone) {
-      params.ClientPhoneID = clientPhone;
-      params.ClientPhone = clientPhone;
-      params.ClientAlias = clientPhone;
-      params.BotPhoneID = cfg.metaPhoneId;
-      params.BotPhone = cfg.metaPhoneId;
-      console.log(`[console-api] Initialize parameters for new conversation with client: ${clientPhone}, bot phone id: ${cfg.metaPhoneId}`);
-    } else {
-      console.warn("[console-api] Saving message without conversation ID and without client phone identifier.");
+  // Siempre extraemos el clientPhone del body para pasarlo a Doobot, 
+  // incluso si ya tenemos un finalConversationId.
+  if (!clientPhone && bodyText) {
+    try {
+      const bodyJson = JSON.parse(bodyText);
+      clientPhone = String(bodyJson.to || "").replace(/^\+/, "").trim();
+    } catch {
+      // ignore
     }
+  }
+
+  if (clientPhone) {
+    params.ClientPhoneID = clientPhone;
+    params.ClientPhone = clientPhone;
+    params.ClientAlias = clientPhone;
+    params.BotPhoneID = cfg.metaPhoneId;
+    params.BotPhone = cfg.metaPhoneId;
+    console.log(`[console-api] Initialize parameters for conversation with client: ${clientPhone}, bot phone id: ${cfg.metaPhoneId}`);
+  } else if (!finalConversationId) {
+    console.warn("[console-api] Saving message without conversation ID and without client phone identifier.");
   }
 
   const searchParams = new URLSearchParams(params);
