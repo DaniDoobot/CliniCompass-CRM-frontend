@@ -107,7 +107,7 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
             doobotBase = "https://boston.doobot.ai";
             doobotConsoleId = "321568811036009";
             metaPhoneId = "321568811036009";
-            metaToken = "EAAHZCWCjz1FwBPvwsX2wtcBAM7q5aDUSpEOgbTtRy6yDnrkFPJAyzvwcWlMwlGuyG1loDnl0u9sHEYinZArCnF1qLUlnC1c63CVa6kBJvdRjwZCWHWpIKZAk8X9LZAPJgJowctT4TatIgbOkPjCnosFlruvytQh3u5JG2K1xPoMQFWdFpiRZAXsZBdjOx7DkwZDZD";
+            metaToken = "EAAVZB4gt5e6ABRpqT1JNwQZB1nEz6jdOopgW7CZBvM4YgvMZBiRYBT30x308TALmaaJIXhaB1b3JQ4cUag0MVZBJ3qIDFkYNZAKNcljDpdbqEZASzzzQZAurv00pMzWimytOQ0p7N6MrFZAHZAszZBvpwKBcGLCNOptZC0eMn0JnwZAWIo4bsyzZBxvZCzY6uG2qwi7jwZDZD";
             doobotUser = Deno.env.get("DOOBOT_USER_BOSTON") ?? doobotUser;
             doobotPass = Deno.env.get("DOOBOT_PASS_BOSTON") ?? doobotPass;
             console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to: ${doobotBase} with Console ID: ${doobotConsoleId}`);
