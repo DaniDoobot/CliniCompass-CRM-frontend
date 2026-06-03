@@ -208,7 +208,7 @@ export function MessageBubble({ message }: Props) {
           {formatTime(message.time)}
           {message.fromUser && message.status && (
             <span style={{ marginLeft: 4, display: "inline-flex", alignItems: "center" }}>
-              <StatusIcon status={message.status} />
+              <StatusIcon status={message.status} errorMessage={message.errorMessage} />
             </span>
           )}
         </div>
@@ -245,7 +245,7 @@ function SingleCheck() {
   );
 }
 
-function StatusIcon({ status }: { status: string }) {
+function StatusIcon({ status, errorMessage }: { status: string; errorMessage?: string }) {
   switch (status?.toLowerCase()) {
     case "sent":
       return <SingleCheck />;
@@ -255,16 +255,19 @@ function StatusIcon({ status }: { status: string }) {
       return <DoubleCheck blue />;
     case "failed":
       return (
-        <span style={{
-          fontSize: 10,
-          color: "#ef4444",
-          fontWeight: 600,
-          background: "rgba(239,68,68,0.1)",
-          borderRadius: 4,
-          padding: "1px 4px",
-          marginLeft: 2,
-          letterSpacing: 0.2,
-        }}>
+        <span 
+          title={errorMessage || "Envío fallido"}
+          style={{
+            fontSize: 10,
+            color: "#ef4444",
+            fontWeight: 600,
+            background: "rgba(239,68,68,0.1)",
+            borderRadius: 4,
+            padding: "1px 4px",
+            marginLeft: 2,
+            letterSpacing: 0.2,
+            cursor: errorMessage ? "help" : "default"
+          }}>
           Envío fallido
         </span>
       );

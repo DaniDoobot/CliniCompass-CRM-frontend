@@ -34,6 +34,7 @@ export interface ParsedMessage {
   audioUrl?: string;
   status?: string;
   who?: string;
+  errorMessage?: string;
 }
 
 // =========================================================
@@ -205,6 +206,7 @@ function parseMessages(items: MessageItem[]): ParsedMessage[] {
       audioId: extractAudioId(msg),
       status: msg.Status ?? undefined,
       who: msg.Who ?? undefined,
+      errorMessage: msg.ErrorMessage ?? undefined,
     }));
 }
 
