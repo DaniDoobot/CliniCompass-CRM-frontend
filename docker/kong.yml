@@ -102,6 +102,16 @@ services:
           hide_credentials: false
 
   # Storage
+  - name: storage-v1-public
+    url: http://storage:5000/object/public/
+    routes:
+      - name: storage-v1-public
+        strip_path: true
+        paths:
+          - /storage/v1/object/public/
+    plugins:
+      - name: cors
+
   - name: storage-v1
     url: http://storage:5000/
     routes:
