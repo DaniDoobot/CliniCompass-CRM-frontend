@@ -1707,3 +1707,38 @@
   font-weight: 500;
   color: hsl(var(--foreground));
 }
+
+/* ── File Upload in SendOptionsDialog ── */
+.console-upload-btn-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.console-upload-label-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  color: hsl(var(--secondary-foreground));
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.console-upload-label-btn:hover:not(.disabled) {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--foreground) / 0.2);
+}
+
+.console-upload-label-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

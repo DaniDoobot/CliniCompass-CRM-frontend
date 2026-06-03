@@ -7,7 +7,8 @@ import {
 } from "@/lib/doobotConfig";
 import type { ChatItem } from "@/lib/doobotApi";
 import { useAuth } from "@/hooks/useAuth";
-import { X, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2, Upload } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   chat: ChatItem;
@@ -28,8 +29,54 @@ export function SendOptionsDialog({ chat, onClose }: Props) {
 
   const phone = chat.ClientPhone ?? "";
 
+  // File upload state
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video" | "document") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const fileExt = file.name.split(".").pop();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const safeName = `${Date.now()}-${randomId}.${fileExt}`;
+      const filePath = `${chat.ConversationID}/${safeName}`;
+
+      const { data, error } = await supabase.storage
+        .from("chat-media")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("chat-media")
+        .getPublicUrl(filePath);
+
+      if (type === "image") {
+        setImgUrl(publicUrl);
+      } else if (type === "video") {
+        setVidUrl(publicUrl);
+      } else if (type === "document") {
+        setDocUrl(publicUrl);
+        if (!docFilename) {
+          setDocFilename(file.name);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
+      alert("Error al subir archivo: " + (error.message || error));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Image state
   const [imgUrl, setImgUrl] = useState("");
+
   const [imgCaption, setImgCaption] = useState("");
 
   // Video state
@@ -163,11 +210,24 @@ export function SendOptionsDialog({ chat, onClose }: Props) {
             <>
               <div className="console-send-field">
                 <label>URL de la imagen *</label>
-                <input
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  value={imgUrl}
-                  onChange={(e) => setImgUrl(e.target.value)}
-                />
+                <div className="console-upload-btn-container">
+                  <input
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                    value={imgUrl}
+                    onChange={(e) => setImgUrl(e.target.value)}
+                  />
+                  <label className={`console-upload-label-btn ${uploading ? "disabled" : ""}`}>
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    Subir
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, "image")}
+                      disabled={uploading}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="console-send-field">
                 <label>Caption (opcional)</label>
@@ -184,11 +244,24 @@ export function SendOptionsDialog({ chat, onClose }: Props) {
             <>
               <div className="console-send-field">
                 <label>URL del vídeo *</label>
-                <input
-                  placeholder="https://ejemplo.com/video.mp4"
-                  value={vidUrl}
-                  onChange={(e) => setVidUrl(e.target.value)}
-                />
+                <div className="console-upload-btn-container">
+                  <input
+                    placeholder="https://ejemplo.com/video.mp4"
+                    value={vidUrl}
+                    onChange={(e) => setVidUrl(e.target.value)}
+                  />
+                  <label className={`console-upload-label-btn ${uploading ? "disabled" : ""}`}>
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    Subir
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => handleFileUpload(e, "video")}
+                      disabled={uploading}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="console-send-field">
                 <label>Caption (opcional)</label>
@@ -205,11 +278,24 @@ export function SendOptionsDialog({ chat, onClose }: Props) {
             <>
               <div className="console-send-field">
                 <label>URL del documento *</label>
-                <input
-                  placeholder="https://ejemplo.com/documento.pdf"
-                  value={docUrl}
-                  onChange={(e) => setDocUrl(e.target.value)}
-                />
+                <div className="console-upload-btn-container">
+                  <input
+                    placeholder="https://ejemplo.com/documento.pdf"
+                    value={docUrl}
+                    onChange={(e) => setDocUrl(e.target.value)}
+                  />
+                  <label className={`console-upload-label-btn ${uploading ? "disabled" : ""}`}>
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    Subir
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      onChange={(e) => handleFileUpload(e, "document")}
+                      disabled={uploading}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="console-send-field">
                 <label>Nombre del archivo</label>
