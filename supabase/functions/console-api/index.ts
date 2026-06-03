@@ -266,11 +266,12 @@ async function actionSave(p: Record<string, unknown>, cfg: ChannelConfig, cookie
 
   // Check if conversationId is a valid UUID. If not, treat as phone number and resolve/initialize conversation.
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(conversationId);
+  const isPhone = /^\+?[0-9]{9,15}$/.test(conversationId);
 
   let finalConversationId = "";
   let clientPhone = "";
 
-  if (conversationId && !isUuid) {
+  if (conversationId && isPhone) {
     clientPhone = conversationId.replace(/^\+/, "").trim();
     try {
       console.log(`[console-api] Resolving conversation for phone ${clientPhone} and Bot Phone ID ${cfg.metaPhoneId}...`);
