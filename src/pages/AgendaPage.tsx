@@ -13,7 +13,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Badge } from "@/components/ui/badge";
 import { Plus, ChevronLeft, ChevronRight, Loader2, Clock, X, CalendarPlus, Wand2, List, User, MapPin, Trash2 } from "lucide-react";
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useStaffProfiles, useServices } from "@/hooks/useAppointments";
-import { useAvailabilitySlots, useCreateAvailabilitySlotsBatch, useBookSlot, useFreeSlot, useUpdateAvailabilitySlot, useDeleteAvailabilitySlot } from "@/hooks/useAvailability";
+import { useCreateAvailabilitySlotsBatch, useBookSlot, useFreeSlot, useUpdateAvailabilitySlot, useDeleteAvailabilitySlot } from "@/hooks/useAvailability";
+import { useDynamicAvailability } from "@/hooks/useDynamicAvailability";
 import { useContacts, useCreateContact, useContactCategories } from "@/hooks/useContacts";
 import { ContactSelector } from "@/components/contact/ContactSelector";
 import { useCenters } from "@/hooks/useCenters";
@@ -79,10 +80,9 @@ export default function AgendaPage() {
     : format(monthEnd, "yyyy-MM-dd");
 
   // Data
-  const { data: slots, isLoading: slotsLoading } = useAvailabilitySlots({
+  const { data: slots, isLoading: slotsLoading } = useDynamicAvailability({
     center_id: selectedCenterId,
     professional_id: professionalFilter,
-    service_id: serviceFilter,
     date_from: dateFrom,
     date_to: dateTo,
   });
@@ -94,7 +94,7 @@ export default function AgendaPage() {
   });
   const { data: staff } = useStaffProfiles();
   const { data: services } = useServices();
-  const { data: contacts } = useContacts();
+  const { data: contacts } = useContacts({ category: "cliente" });
   const { data: centers } = useCenters();
   const { data: scsAll } = useAllStaffCenterServices();
   const { data: contactCategories } = useContactCategories();
@@ -335,9 +335,10 @@ export default function AgendaPage() {
   const handleBookSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSlot || !bookForm.contact_id) { toast.error("Selecciona un contacto"); return; }
-    const dur = parseInt(bookForm.duration) || selectedSlot.duration_minutes;
-    const startDt = new Date(`${selectedSlot.date}T${selectedSlot.start_time}:00`).toISOString();
-    const endDt = new Date(new Date(`${selectedSlot.date}T${selectedSlot.start_time}:00`).getTime() + dur * 60000).toISOString();
+    const dur = parseInt(bookForm.duration) || selectedSlot.duration_minutes || 30;
+    const startHm = selectedSlot.start_time.slice(0, 5);
+    const startDt = new Date(`${selectedSlot.date}T${startHm}:00`).toISOString();
+    const endDt = new Date(new Date(`${selectedSlot.date}T${startHm}:00`).getTime() + dur * 60000).toISOString();
     
     if (selectedSlot.professional_id && appointments) {
       const overlap = appointments.find((a: any) => 
