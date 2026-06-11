@@ -7,6 +7,7 @@ import * as XLSX from "xlsx";
 import { BotCatalog, getTranslation, getTemplatesForCompany } from "@/lib/doobotConfig";
 import { useBatches, useCreateBatch, useUpdateBatch, useDeleteBatch } from "@/hooks/useSends";
 import { useAuth } from "@/hooks/useAuth";
+import { useDoobotBots } from "@/hooks/useDoobotInfo";
 import { toast } from "sonner";
 
 const LANGUAGES = [
@@ -26,7 +27,28 @@ export function ScheduledSendTab() {
   const companyName = profile?.company?.name || "";
   const templates = getTemplatesForCompany(companyName);
 
-  const [botId, setBotId] = useState(BotCatalog.entries[0]?.id || "");
+  const { data: botsData } = useDoobotBots();
+  const dynamicBots = botsData?.map(b => ({
+    id: b.BotProjectID || b.id || "",
+    display: b.Name || b.display || b.id || ""
+  })).filter(b => b.id) || [];
+  const displayBots = dynamicBots.length > 0 ? dynamicBots : BotCatalog.entries;
+
+  const [phone, setPhone] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [botId, setBotId] = useState("");
+
+  useEffect(() => {
+    if (displayBots.length > 0 && !botId) {
+      setBotId(displayBots[0].id);
+    }
+  }, [displayBots, botId]);
+
+  const getBotDisplay = (id: string | null | undefined) => {
+    if (!id) return "";
+    const found = displayBots.find(b => b.id.toLowerCase() === id.toLowerCase());
+    return found ? found.display : id;
+  };
   const [language, setLanguage] = useState("es");
   const [templateName, setTemplateName] = useState("");
   const [fileName, setFileName] = useState("");
@@ -215,7 +237,7 @@ export function ScheduledSendTab() {
         <div className="sends-field">
           <label>Bot *</label>
           <select value={botId} onChange={(e) => setBotId(e.target.value)}>
-            {BotCatalog.entries.map((b) => (
+            {displayBots.map((b) => (
               <option key={b.id} value={b.id}>{b.display}</option>
             ))}
           </select>
@@ -386,7 +408,7 @@ export function ScheduledSendTab() {
                 <div className="sends-batch-info">
                   <div className="sends-batch-name">{batch.name || "Sin nombre"}</div>
                   <div className="sends-batch-meta">
-                    <span>{BotCatalog.displayFromId(batch.bot_id)}</span>
+                    <span>{getBotDisplay(batch.bot_id)}</span>
                     <span>·</span>
                     <span>{batch.total_count} dest.</span>
                     <span>·</span>

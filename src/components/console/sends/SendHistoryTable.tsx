@@ -1,6 +1,7 @@
 import { Loader2, CheckCircle2, AlertCircle, Clock, Send as SendIcon } from "lucide-react";
 import { useSendHistory } from "@/hooks/useSends";
 import { BotCatalog } from "@/lib/doobotConfig";
+import { useDoobotBots } from "@/hooks/useDoobotInfo";
 
 const STATUS_MAP: Record<string, { label: string; icon: any; cls: string }> = {
   pending: { label: "Pendiente", icon: Clock, cls: "pending" },
@@ -11,6 +12,19 @@ const STATUS_MAP: Record<string, { label: string; icon: any; cls: string }> = {
 
 export function SendHistoryTable() {
   const { data: sends, isLoading } = useSendHistory(50);
+  const { data: botsData } = useDoobotBots();
+
+  const dynamicBots = botsData?.map(b => ({
+    id: b.BotProjectID || b.id || "",
+    display: b.Name || b.display || b.id || ""
+  })).filter(b => b.id) || [];
+  const displayBots = dynamicBots.length > 0 ? dynamicBots : BotCatalog.entries;
+
+  const getBotDisplay = (id: string | null | undefined) => {
+    if (!id) return "";
+    const found = displayBots.find(b => b.id.toLowerCase() === id.toLowerCase());
+    return found ? found.display : id;
+  };
 
   if (isLoading) {
     return (
@@ -52,7 +66,7 @@ export function SendHistoryTable() {
                   </td>
                   <td className="sends-phone">{s.phone}</td>
                   <td>{s.client_name || "—"}</td>
-                  <td>{BotCatalog.displayFromId(s.bot_id)}</td>
+                  <td>{getBotDisplay(s.bot_id)}</td>
                   <td>{s.template_name || "—"}</td>
                   <td>
                     <span className={`sends-status-badge ${st.cls}`}>

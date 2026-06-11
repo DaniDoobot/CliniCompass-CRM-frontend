@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ChatItem } from "@/lib/doobotApi";
-import { useDoobotConversationActions, useDoobotManagers } from "@/hooks/useDoobotInfo";
+import { useDoobotConversationActions, useDoobotManagers, useDoobotBots } from "@/hooks/useDoobotInfo";
 import {
   StatusCatalog,
   BotCatalog,
@@ -16,8 +16,15 @@ interface Props {
 
 export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
   const { data: managers } = useDoobotManagers();
+  const { data: botsData } = useDoobotBots();
   const { assignManager, setCampaign, setBot, setAlias } =
     useDoobotConversationActions(chat.ConversationID);
+
+  const dynamicBots = botsData?.map(b => ({
+    id: b.BotProjectID || b.id || "",
+    display: b.Name || b.display || b.id || ""
+  })).filter(b => b.id) || [];
+  const displayBots = dynamicBots.length > 0 ? dynamicBots : BotCatalog.entries;
 
   const [aliasValue, setAliasValue] = useState(chat.ClientAlias ?? "");
   const [aliasSaved, setAliasSaved] = useState(false);
@@ -175,7 +182,7 @@ export function ConversationInfo({ chat, onClose, onUpdate }: Props) {
           }}
         >
           <option value="">Sin bot</option>
-          {BotCatalog.entries.map((b) => (
+          {displayBots.map((b) => (
             <option key={b.id} value={b.id}>
               {b.display}
             </option>

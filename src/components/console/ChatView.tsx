@@ -20,6 +20,7 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
   const prevMsgCount = useRef(0);
   const { hasPermission } = useAuth();
   const canSendTemplates = hasPermission("envios", "read");
+  const canWriteConsole = hasPermission("consola", "write");
 
   const { messages, isLoading, sendText } = useDoobotMessages(chat?.ConversationID ?? null);
 
@@ -130,7 +131,7 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
 
       {/* Input */}
       <div className="console-input-area">
-        {canSendTemplates && (
+        {canSendTemplates && canWriteConsole && (
           <button className="console-attach-btn" onClick={onOpenSendOptions} title="Envío avanzado">
             <Plus size={20} />
           </button>
@@ -138,16 +139,16 @@ export function ChatView({ chat, onToggleInfo, onToggleMode, onSwitchToManual, o
         <input
           ref={inputRef}
           type="text"
-          placeholder="Escribe un mensaje..."
+          placeholder={canWriteConsole ? "Escribe un mensaje..." : "No tienes permisos de escritura"}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={sendText.isPending}
+          disabled={!canWriteConsole || sendText.isPending}
         />
         <button
           className="console-send-btn"
           onClick={handleSend}
-          disabled={!text.trim() || sendText.isPending}
+          disabled={!canWriteConsole || !text.trim() || sendText.isPending}
         >
           {sendText.isPending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
         </button>

@@ -32,7 +32,35 @@ async function invoke<T>(action: string, params: Record<string, unknown> = {}): 
   }
 
   if (!res.ok || result.error) {
-    throw new Error(result.error || `Error HTTP ${res.status}`);
+    const errorMsg = result.error || `Error HTTP ${res.status}`;
+    console.error(`[doobotApi] invoke error for action "${action}":`, errorMsg);
+
+    const isAuthError = 
+      res.status === 401 ||
+      res.status === 403 ||
+      errorMsg.includes("401") ||
+      errorMsg.includes("403") ||
+      errorMsg.toLowerCase().includes("unauthorized") ||
+      errorMsg.toLowerCase().includes("forbidden") ||
+      errorMsg.toLowerCase().includes("session") ||
+      errorMsg.toLowerCase().includes("cookie") ||
+      errorMsg.toLowerCase().includes("sesión") ||
+      errorMsg.toLowerCase().includes("iniciar sesión") ||
+      errorMsg.toLowerCase().includes("login") ||
+      errorMsg.toLowerCase().includes("usuario no válido") ||
+      errorMsg.toLowerCase().includes("usuario no valido") ||
+      errorMsg.toLowerCase().includes("no válido") ||
+      errorMsg.toLowerCase().includes("no valido") ||
+      errorMsg.toLowerCase().includes("incorrectas") ||
+      errorMsg.toLowerCase().includes("credenciales");
+
+    if (isAuthError) {
+      console.warn("Doobot/CRM session expired or unauthorized. Logging out...", errorMsg);
+      localStorage.removeItem("doobot_cookie");
+      await supabase.auth.signOut();
+      window.location.href = "/login";
+    }
+    throw new Error(errorMsg);
   }
   
   return result.data as T;
@@ -174,3 +202,16 @@ export const changeAlias = (id: string, alias: string) => change("alias", id, al
 export async function getManagerList(): Promise<ManagerItem[]> {
   return invoke("doobot:managers");
 }
+
+// ── Bots ───────────────────────────────────────────────────────────────
+export interface BotItem {
+  BotProjectID?: string;
+  id?: string;
+  Name?: string;
+  display?: string;
+}
+
+export async function getBotList(): Promise<BotItem[]> {
+  return invoke("doobot:bots");
+}
+

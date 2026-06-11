@@ -95,22 +95,35 @@ async function getChannelConfig(supabaseClient: any, userId: string, _channelId?
       } else if (staff?.company_id) {
         const { data: company, error: compErr } = await supabaseClient
           .from("companies")
-          .select("name")
+          .select("name, doobot_base_url")
           .eq("id", staff.company_id)
           .maybeSingle();
 
         if (compErr) {
           console.error("Error fetching company in getChannelConfig:", compErr);
-        } else if (company?.name) {
-          const companyName = company.name;
-          if (companyName.toLowerCase().includes("boston")) {
-            doobotBase = "https://boston.doobot.ai";
-            doobotConsoleId = "321568811036009";
-            metaPhoneId = "321568811036009";
-            metaToken = Deno.env.get("META_TOKEN_BOSTON") ?? Deno.env.get("META_TOKEN") ?? metaToken;
-            doobotUser = Deno.env.get("DOOBOT_USER_BOSTON") ?? doobotUser;
-            doobotPass = Deno.env.get("DOOBOT_PASS_BOSTON") ?? doobotPass;
-            console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to: ${doobotBase} with Console ID: ${doobotConsoleId}`);
+        } else if (company) {
+          if (company.doobot_base_url) {
+            doobotBase = company.doobot_base_url;
+            console.log(`[console-api] User ${userId} belongs to company '${company.name}'. Routing to configured URL: ${doobotBase}`);
+            // If Boston specific env vars exist for other fields, we can still apply them based on the name for backward compatibility
+            if (company.name.toLowerCase().includes("boston")) {
+              doobotConsoleId = "321568811036009";
+              metaPhoneId = "321568811036009";
+              metaToken = Deno.env.get("META_TOKEN_BOSTON") ?? Deno.env.get("META_TOKEN") ?? metaToken;
+              doobotUser = Deno.env.get("DOOBOT_USER_BOSTON") ?? doobotUser;
+              doobotPass = Deno.env.get("DOOBOT_PASS_BOSTON") ?? doobotPass;
+            }
+          } else {
+            const companyName = company.name;
+            if (companyName.toLowerCase().includes("boston")) {
+              doobotBase = "https://boston.doobot.ai";
+              doobotConsoleId = "321568811036009";
+              metaPhoneId = "321568811036009";
+              metaToken = Deno.env.get("META_TOKEN_BOSTON") ?? Deno.env.get("META_TOKEN") ?? metaToken;
+              doobotUser = Deno.env.get("DOOBOT_USER_BOSTON") ?? doobotUser;
+              doobotPass = Deno.env.get("DOOBOT_PASS_BOSTON") ?? doobotPass;
+              console.log(`[console-api] User ${userId} belongs to company '${companyName}'. Routing to fallback: ${doobotBase} with Console ID: ${doobotConsoleId}`);
+            }
           }
         }
       }
@@ -138,6 +151,13 @@ async function getDoobotCookie(cfg: ChannelConfig): Promise<string> {
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ name: cfg.doobotUser, pass: cfg.doobotPass }),
   });
+  
+  if (!res.ok && res.status !== 422) {
+    const errorText = await res.text();
+    console.error(`[getDoobotCookie] Failed to login to ${cfg.doobotBase}. Status: ${res.status}. User: ${cfg.doobotUser}. Response: ${errorText}`);
+    throw new Error(`Fallo el login interno en Doobot (${res.status}): ${errorText.slice(0, 100)}`);
+  }
+
   // 200 = login OK, 422 = sesión ya activa — ambos pueden devolver cookies
   const raw = res.headers.get("set-cookie") ?? "";
   return raw
@@ -148,16 +168,17 @@ async function getDoobotCookie(cfg: ChannelConfig): Promise<string> {
 }
 
 async function actionDoobotLogin(email: string, pass: string, cfg: ChannelConfig): Promise<{ cookie: string }> {
-  console.log(`[console-api] Intentando login en Doobot con doobotBase: ${cfg.doobotBase}, usuario: ${email}`);
+  const username = email.includes("@") ? email.split("@")[0] : email;
+  console.log(`[console-api] Intentando login en Doobot con doobotBase: ${cfg.doobotBase}, usuario: ${username}`);
   const res = await fetch(`${cfg.doobotBase}/user/login?_format=json`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ name: email, pass }),
+    body: JSON.stringify({ name: username, pass }),
   });
   if (!res.ok) {
     const errorText = await res.text();
     console.error(`[console-api] Error login en Doobot. Status: ${res.status}, Body: ${errorText}`);
-    throw new Error(`Credenciales de Doobot incorrectas (Base: ${cfg.doobotBase}, Usuario: ${email})`);
+    throw new Error(`Credenciales de Doobot incorrectas (Base: ${cfg.doobotBase}, Usuario: ${username})`);
   }
   const raw = res.headers.get("set-cookie") ?? "";
   const cookie = raw
@@ -316,7 +337,6 @@ async function actionSave(p: Record<string, unknown>, cfg: ChannelConfig, cookie
   if (clientPhone) {
     params.ClientPhoneID = clientPhone;
     params.ClientPhone = clientPhone;
-    params.ClientAlias = clientPhone;
     params.BotPhoneID = cfg.metaPhoneId;
     params.BotPhone = cfg.metaPhoneId;
     console.log(`[console-api] Initialize parameters for conversation with client: ${clientPhone}, bot phone id: ${cfg.metaPhoneId}`);
@@ -331,6 +351,11 @@ async function actionSave(p: Record<string, unknown>, cfg: ChannelConfig, cookie
 async function actionManagers(cfg: ChannelConfig, cookie: string) {
   return doobotGET("/whatsapp/get-manager-list", cfg, cookie);
 }
+
+async function actionBots(cfg: ChannelConfig, cookie: string) {
+  return doobotGET("/whatsapp/get-bot-list", cfg, cookie);
+}
+
 
 async function actionChange(p: Record<string, unknown>, cfg: ChannelConfig, cookie: string) {
   const { cmd, id, value } = p;
@@ -454,6 +479,12 @@ serve(async (req: Request) => {
     //   para que resuelva credenciales por usuario/canal desde BD.
     const cfg = await getChannelConfig(supabaseAuth, user.id, channel_id);
 
+    // Validar que las credenciales obligatorias del canal estén configuradas para evitar fallos silenciosos
+    if (!cfg.doobotConsoleId || !cfg.metaPhoneId || !cfg.metaToken || !cfg.doobotUser || !cfg.doobotPass) {
+      console.error("[console-api] Missing channel configuration:", cfg);
+      throw new Error("Variables de entorno del canal de WhatsApp no configuradas en Supabase (DOOBOT_CONSOLE_ID, META_PHONE_ID, META_TOKEN, DOOBOT_USER, DOOBOT_PASS)");
+    }
+
     // 4. Obtener sesión Doobot solo para acciones que la necesiten
     let cookie = "";
     if (action.startsWith("doobot:") && action !== "doobot:login") {
@@ -488,6 +519,9 @@ serve(async (req: Request) => {
         break;
       case "doobot:managers":
         data = await actionManagers(cfg, cookie);
+        break;
+      case "doobot:bots":
+        data = await actionBots(cfg, cookie);
         break;
       case "doobot:change":
         data = await actionChange(params, cfg, cookie);

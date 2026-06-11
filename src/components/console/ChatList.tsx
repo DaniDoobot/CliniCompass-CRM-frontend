@@ -57,13 +57,24 @@ export function ChatList({ selectedId, onSelect, onModeToggled, onOpenSends }: P
   const filtered = useMemo(() => {
     let list = [...chats];
 
-    // Sort: unread first, then by most-recent activity
-    list.sort((a, b) => {
-      const aUnread = hasUnread(a) ? 1 : 0;
-      const bUnread = hasUnread(b) ? 1 : 0;
-      if (bUnread !== aUnread) return bUnread - aUnread;
-      return parseDoobotTimestamp(b.LastMessageTimestamp) - parseDoobotTimestamp(a.LastMessageTimestamp);
-    });
+    const getUnreadCount = (c: ChatItem) => {
+      const apiCount = parseInt(c.MessagesNoRead ?? "0", 10) || 0;
+      const localHasUnread = c.ConversationID ? newActivity.has(c.ConversationID) : false;
+      return localHasUnread ? Math.max(apiCount, 1) : apiCount;
+    };
+
+    if (tab === "archivadas") {
+      list.sort((a, b) => {
+        return parseDoobotTimestamp(b.LastMessageTimestamp) - parseDoobotTimestamp(a.LastMessageTimestamp);
+      });
+    } else {
+      list.sort((a, b) => {
+        const countA = getUnreadCount(a);
+        const countB = getUnreadCount(b);
+        if (countB !== countA) return countB - countA;
+        return parseDoobotTimestamp(b.LastMessageTimestamp) - parseDoobotTimestamp(a.LastMessageTimestamp);
+      });
+    }
 
     // For "No leídos" filter conversations with unread messages (API or local)
     if (tab === "no_leidos") {

@@ -11,13 +11,23 @@ import {
   changeTimeZone as apiChangeTimeZone,
   changeContact as apiChangeContact,
   changeAlias as apiChangeAlias,
+  getBotList,
   type ManagerItem,
+  type BotItem,
 } from "@/lib/doobotApi";
 
 export function useDoobotManagers() {
   return useQuery<ManagerItem[]>({
     queryKey: ["doobot-managers"],
     queryFn: getManagerList,
+    staleTime: 60_000,
+  });
+}
+
+export function useDoobotBots() {
+  return useQuery<BotItem[]>({
+    queryKey: ["doobot-bots"],
+    queryFn: getBotList,
     staleTime: 60_000,
   });
 }
