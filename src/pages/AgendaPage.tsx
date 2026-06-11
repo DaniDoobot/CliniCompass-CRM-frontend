@@ -13,8 +13,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Badge } from "@/components/ui/badge";
 import { Plus, ChevronLeft, ChevronRight, Loader2, Clock, X, CalendarPlus, Wand2, List, User, MapPin, Trash2 } from "lucide-react";
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useStaffProfiles, useServices } from "@/hooks/useAppointments";
-import { useAvailabilitySlots, useCreateAvailabilitySlotsBatch, useBookSlot, useFreeSlot, useUpdateAvailabilitySlot, useDeleteAvailabilitySlot } from "@/hooks/useAvailability";
-import { useContacts } from "@/hooks/useContacts";
+import { useCreateAvailabilitySlotsBatch, useBookSlot, useFreeSlot, useUpdateAvailabilitySlot, useDeleteAvailabilitySlot } from "@/hooks/useAvailability";
+import { useDynamicAvailability } from "@/hooks/useDynamicAvailability";
+import { useContacts, useCreateContact, useContactCategories } from "@/hooks/useContacts";
+import { ContactSelector } from "@/components/contact/ContactSelector";
 import { useCenters } from "@/hooks/useCenters";
 import { useCenterFilter } from "@/components/layout/CenterSelector";
 import { useAllStaffCenterServices } from "@/hooks/useStaffCenterServices";
@@ -78,10 +80,9 @@ export default function AgendaPage() {
     : format(monthEnd, "yyyy-MM-dd");
 
   // Data
-  const { data: slots, isLoading: slotsLoading } = useAvailabilitySlots({
+  const { data: slots, isLoading: slotsLoading } = useDynamicAvailability({
     center_id: selectedCenterId,
     professional_id: professionalFilter,
-    service_id: serviceFilter,
     date_from: dateFrom,
     date_to: dateTo,
   });
@@ -93,9 +94,11 @@ export default function AgendaPage() {
   });
   const { data: staff } = useStaffProfiles();
   const { data: services } = useServices();
-  const { data: contacts } = useContacts();
+  const { data: contacts } = useContacts({ category: "cliente" });
   const { data: centers } = useCenters();
   const { data: scsAll } = useAllStaffCenterServices();
+  const { data: contactCategories } = useContactCategories();
+  const createContact = useCreateContact();
 
   const createSlotsBatch = useCreateAvailabilitySlotsBatch();
   const bookSlot = useBookSlot();
@@ -188,6 +191,12 @@ export default function AgendaPage() {
     center_id: "", professional_id: "", service_id: "",
     date_from: "", date_to: "", start_time: "09:00", end_time: "14:00",
     slot_duration: "60",
+  });
+
+  // Quick Create Contact Form
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [quickCreateForm, setQuickCreateForm] = useState({
+    first_name: "", last_name: "", phone: "",
   });
 
   const resetSlotForm = () => setSlotForm({
@@ -326,9 +335,10 @@ export default function AgendaPage() {
   const handleBookSlot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSlot || !bookForm.contact_id) { toast.error("Selecciona un contacto"); return; }
-    const dur = parseInt(bookForm.duration) || selectedSlot.duration_minutes;
-    const startDt = new Date(`${selectedSlot.date}T${selectedSlot.start_time}:00`).toISOString();
-    const endDt = new Date(new Date(`${selectedSlot.date}T${selectedSlot.start_time}:00`).getTime() + dur * 60000).toISOString();
+    const dur = parseInt(bookForm.duration) || selectedSlot.duration_minutes || 30;
+    const startHm = selectedSlot.start_time.slice(0, 5);
+    const startDt = new Date(`${selectedSlot.date}T${startHm}:00`).toISOString();
+    const endDt = new Date(new Date(`${selectedSlot.date}T${startHm}:00`).getTime() + dur * 60000).toISOString();
     
     if (selectedSlot.professional_id && appointments) {
       const overlap = appointments.find((a: any) => 
@@ -357,6 +367,29 @@ export default function AgendaPage() {
       toast.success("Cita reservada correctamente");
       setBookOpen(false);
     } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleQuickCreateContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCreateForm.first_name) {
+      toast.error("El nombre es obligatorio");
+      return;
+    }
+    try {
+      const clientCat = contactCategories?.find((c: any) => c.name === "cliente") || contactCategories?.[0];
+      const res = await createContact.mutateAsync({
+        first_name: quickCreateForm.first_name,
+        last_name: quickCreateForm.last_name || null,
+        phone: quickCreateForm.phone || null,
+        category_id: clientCat?.id,
+      });
+      toast.success("Cliente creado correctamente");
+      setBookForm({ ...bookForm, contact_id: res.id });
+      setQuickCreateOpen(false);
+      setQuickCreateForm({ first_name: "", last_name: "", phone: "" });
+    } catch (err: any) {
+      toast.error(err.message || "Error al crear cliente");
+    }
   };
 
   const handleFreeSlot = async (slotId: string, aptId: string) => {
@@ -805,13 +838,23 @@ export default function AgendaPage() {
           </DialogHeader>
           <form onSubmit={handleBookSlot} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Contacto *</Label>
-              <Select value={bookForm.contact_id} onValueChange={v => setBookForm({ ...bookForm, contact_id: v })}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Seleccionar contacto" /></SelectTrigger>
-                <SelectContent>
-                  {contacts?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name || ""}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">Paciente / Cliente *</Label>
+              <ContactSelector
+                contacts={contacts || []}
+                value={bookForm.contact_id}
+                onChange={v => setBookForm({ ...bookForm, contact_id: v })}
+                onQuickCreate={(searchTerm) => {
+                  let first_name = searchTerm;
+                  let phone = "";
+                  // If searching by phone (contains numbers)
+                  if (/\\d/.test(searchTerm)) {
+                    phone = searchTerm;
+                    first_name = "";
+                  }
+                  setQuickCreateForm({ first_name, last_name: "", phone });
+                  setQuickCreateOpen(true);
+                }}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Duración real (min)</Label>
@@ -960,6 +1003,49 @@ export default function AgendaPage() {
               <Button type="submit" size="sm" disabled={createSlotsBatch.isPending}>
                 {createSlotsBatch.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
                 Generar demo
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={quickCreateOpen} onOpenChange={setQuickCreateOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Crear nuevo cliente</DialogTitle>
+            <DialogDescription>Añade rápidamente a este cliente para poder agendarle una cita.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleQuickCreateContact} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nombre *</Label>
+              <Input
+                autoFocus
+                required
+                className="h-9"
+                value={quickCreateForm.first_name}
+                onChange={e => setQuickCreateForm({ ...quickCreateForm, first_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Apellidos</Label>
+              <Input
+                className="h-9"
+                value={quickCreateForm.last_name}
+                onChange={e => setQuickCreateForm({ ...quickCreateForm, last_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Teléfono</Label>
+              <Input
+                className="h-9"
+                value={quickCreateForm.phone}
+                onChange={e => setQuickCreateForm({ ...quickCreateForm, phone: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setQuickCreateOpen(false)}>Cancelar</Button>
+              <Button type="submit" size="sm" disabled={createContact.isPending}>
+                {createContact.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                Guardar y seleccionar
               </Button>
             </div>
           </form>

@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Users, Tag, Shield, Receipt, Plus, Loader2, Pencil, MapPin, Trash2, Sparkles, Building2 } from "lucide-react";
+import { Settings, Users, Tag, Shield, Receipt, Plus, Loader2, Pencil, MapPin, Trash2, Sparkles, Building2, Calendar, Clock, Trash } from "lucide-react";
 import { useInvoiceSeries, useCreateInvoiceSeries } from "@/hooks/useBilling";
 import { useAllServices, useCreateService, useUpdateService, useDeleteService } from "@/hooks/useServicesAdmin";
 import { useCenters } from "@/hooks/useCenters";
@@ -23,6 +23,8 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Constants } from "@/integrations/supabase/types";
 import { useAllSpecialties, useCreateSpecialty, useUpdateSpecialty, useDeleteSpecialty } from "@/hooks/useSpecialties";
+import { useStaffSchedules, useSaveStaffSchedule, useDeleteStaffSchedule, useStaffTimeOff, useSaveStaffTimeOff, useDeleteStaffTimeOff } from "@/hooks/useStaffSchedules";
+import { SchedulesSettings } from "@/components/settings/SchedulesSettings";
 
 const ALL_ROLES = Constants.public.Enums.app_role;
 const ROLE_LABELS: Record<string, string> = {
@@ -519,6 +521,7 @@ export default function SettingsPage() {
           <TabsTrigger value="assignments" className="gap-1"><MapPin className="h-3.5 w-3.5" /> Asignaciones</TabsTrigger>
           <TabsTrigger value="billing" className="gap-1"><Receipt className="h-3.5 w-3.5" /> Series facturación</TabsTrigger>
           <TabsTrigger value="team" className="gap-1"><Users className="h-3.5 w-3.5" /> Equipo</TabsTrigger>
+          <TabsTrigger value="schedules" className="gap-1"><Calendar className="h-3.5 w-3.5" /> Horarios</TabsTrigger>
         </TabsList>
 
         {isSuperAdmin && (
@@ -1448,6 +1451,10 @@ export default function SettingsPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        </TabsContent>
+
+        <TabsContent value="schedules">
+          <SchedulesSettings />
         </TabsContent>
       </Tabs>
     </AppLayout>

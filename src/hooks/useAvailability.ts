@@ -163,17 +163,11 @@ export function useBookSlot() {
       }
       const { data: apt } = await res.json();
 
-      // Mark slot as occupied locally
-      const { error: slotErr } = await supabase
-        .from("availability_slots")
-        .update({ status: "ocupado" as any, appointment_id: apt.id })
-        .eq("id", slotId);
-      if (slotErr) throw slotErr;
-
+      // Because we now use dynamic availability, we don't need to update a static slots table
       return apt;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["availability-slots"] });
+      qc.invalidateQueries({ queryKey: ["dynamic-availability"] });
       qc.invalidateQueries({ queryKey: ["appointments"] });
       qc.invalidateQueries({ queryKey: ["contact-appointments"] });
     },
@@ -184,14 +178,11 @@ export function useFreeSlot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (slotId: string) => {
-      const { error } = await supabase
-        .from("availability_slots")
-        .update({ status: "disponible" as any, appointment_id: null })
-        .eq("id", slotId);
-      if (error) throw error;
+      // Deprecated: No static slots to free
+      console.log("Slot ID to free (deprecated):", slotId);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["availability-slots"] });
+      qc.invalidateQueries({ queryKey: ["dynamic-availability"] });
       qc.invalidateQueries({ queryKey: ["appointments"] });
     },
   });
